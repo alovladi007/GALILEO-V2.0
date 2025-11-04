@@ -55,7 +55,7 @@ export default function GlobeViewer({
 
         console.log('Creating Cesium Viewer...');
 
-        // Create the Viewer with simplified configuration
+        // Create the Viewer with offline imagery configuration
         const viewer = new Cesium.Viewer(viewerContainerRef.current!, {
           animation: false,
           baseLayerPicker: false,
@@ -68,6 +68,12 @@ export default function GlobeViewer({
           timeline: false,
           navigationHelpButton: false,
           navigationInstructionsInitiallyVisible: false,
+          // Use offline Natural Earth II imagery - works without Ion token issues
+          baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+            Cesium.TileMapServiceImageryProvider.fromUrl(
+              Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII")
+            )
+          ),
         });
 
         console.log('Cesium Viewer created successfully!');

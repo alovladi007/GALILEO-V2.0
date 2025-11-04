@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
 const path = require('path');
 
 const nextConfig = {
@@ -13,6 +14,13 @@ const nextConfig = {
         path: false,
         crypto: false,
       };
+
+      // Define CESIUM_BASE_URL at build time
+      config.plugins.push(
+        new webpack.DefinePlugin({
+          CESIUM_BASE_URL: JSON.stringify('/'),
+        })
+      );
 
       // Copy Cesium assets to public output
       config.plugins.push(

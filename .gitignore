@@ -101,3 +101,6 @@ ui/public/Widgets/
 ui/public/Cesium.js
 ui/public/index.js
 ui/public/index.cjs
+
+# Test pages
+ui/src/app/test-cesium/
