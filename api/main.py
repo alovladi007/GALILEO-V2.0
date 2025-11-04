@@ -94,9 +94,14 @@ class NoiseRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    """Serve the main dashboard."""
-    dashboard_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
-    return FileResponse(dashboard_path)
+    """Redirect to API documentation."""
+    return {
+        "message": "GeoSense Platform API",
+        "version": "0.4.0",
+        "documentation": "/docs",
+        "ui": "http://localhost:3000 (Next.js UI - run 'cd ui && npm install && npm run dev')",
+        "health": "/health",
+    }
 
 @app.get("/health")
 async def health_check():

@@ -77,7 +77,11 @@ pip install -e ".[monitoring]"
 
 ## 🌐 Run on Localhost
 
-Start the GeoSense Platform web interface on your local machine:
+The platform consists of two components:
+1. **FastAPI Backend** (port 5050) - Simulation and computation API
+2. **Next.js Frontend** (port 3000) - 3D visualization with CesiumJS
+
+### Step 1: Start the FastAPI Backend
 
 ```bash
 # Quick start - run the startup script
@@ -87,11 +91,29 @@ Start the GeoSense Platform web interface on your local machine:
 python3 -m uvicorn api.main:app --reload --host 0.0.0.0 --port 5050
 ```
 
-Then open your browser to:
-
-- **Dashboard**: http://localhost:5050
+Backend endpoints:
 - **API Documentation**: http://localhost:5050/docs (Interactive Swagger UI)
 - **Health Check**: http://localhost:5050/health
+
+### Step 2: Start the Next.js UI
+
+```bash
+# Navigate to UI folder
+cd ui
+
+# Install dependencies (first time only)
+npm install
+
+# Set up Cesium Ion token (required for 3D globe)
+cp .env.local.example .env.local
+# Edit .env.local and add your Cesium Ion token from https://ion.cesium.com/
+
+# Run development server
+npm run dev
+```
+
+Frontend:
+- **3D Dashboard**: http://localhost:3000
 
 ### Available API Endpoints
 
@@ -100,7 +122,7 @@ Then open your browser to:
 - `POST /api/phase` - Calculate laser phase measurements
 - `POST /api/noise` - Compute interferometry noise budgets
 
-See the interactive API documentation at `/docs` for request/response schemas and live testing.
+See the interactive API documentation at http://localhost:5050/docs for request/response schemas and live testing.
 
 ---
 
