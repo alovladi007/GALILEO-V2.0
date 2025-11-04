@@ -1,0 +1,61 @@
+[workspace]
+members = [
+    "control/dynamics",
+    "control/attitude",
+    "control/power",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+authors = ["GeoSense Team <team@geosense.example>"]
+license = "Proprietary"
+repository = "https://github.com/geosense/geosense-platform"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+async-trait = "0.1"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Numerical computation
+nalgebra = "0.32"
+ndarray = "0.15"
+num-traits = "0.2"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# HTTP/gRPC
+tonic = "0.11"
+prost = "0.12"
+
+# Testing
+proptest = "1.4"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.bench]
+inherits = "release"
+debug = true

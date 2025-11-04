@@ -1,0 +1,10 @@
+Session 1: Add noise models, Allan deviation, and complete demo
+
+- Implement comprehensive noise models (shot, frequency, pointing, clock, acceleration)
+- Add Allan deviation calculations (standard, overlapping, modified)
+- Create noise characterization tools (PSD, noise type identification)
+- Add complete Session 1 demonstration example
+- All functions JIT-compiled where applicable
+- Comprehensive docstrings with equations
+
+Session 1 now at 90%+ completion!
