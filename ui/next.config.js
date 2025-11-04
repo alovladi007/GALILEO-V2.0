@@ -1,4 +1,7 @@
 /** @type {import('next').NextConfig} */
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const path = require('path');
+
 const nextConfig = {
   reactStrictMode: true,
   webpack: (config, { isServer }) => {
@@ -10,6 +13,30 @@ const nextConfig = {
         path: false,
         crypto: false,
       };
+
+      // Copy Cesium assets to public output
+      config.plugins.push(
+        new CopyWebpackPlugin({
+          patterns: [
+            {
+              from: path.join(__dirname, 'node_modules/cesium/Build/Cesium/Workers'),
+              to: '../public/Workers',
+            },
+            {
+              from: path.join(__dirname, 'node_modules/cesium/Build/Cesium/ThirdParty'),
+              to: '../public/ThirdParty',
+            },
+            {
+              from: path.join(__dirname, 'node_modules/cesium/Build/Cesium/Assets'),
+              to: '../public/Assets',
+            },
+            {
+              from: path.join(__dirname, 'node_modules/cesium/Build/Cesium/Widgets'),
+              to: '../public/Widgets',
+            },
+          ],
+        })
+      );
     }
 
     // Handle CesiumJS static files
@@ -20,10 +47,10 @@ const nextConfig = {
       },
     });
 
+    // Ignore cesium source maps
+    config.ignoreWarnings = [/Failed to parse source map/];
+
     return config;
-  },
-  env: {
-    CESIUM_BASE_URL: '/cesium',
   },
 };
 

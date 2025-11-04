@@ -41,8 +41,13 @@ export default function GlobeViewer({
         const token = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN || 'your-token-here';
         Cesium.Ion.defaultAccessToken = token;
 
-        // Set Cesium base URL
-        (window as any).CESIUM_BASE_URL = '/cesium/';
+        // Set Cesium base URL for assets (Workers, etc.)
+        (window as any).CESIUM_BASE_URL = '/';
+
+        // Configure Cesium to load assets from public directory
+        if ((Cesium as any).buildModuleUrl) {
+          (Cesium as any).buildModuleUrl.setBaseUrl('/');
+        }
 
         // Create the Viewer
         const viewer = new Cesium.Viewer(viewerContainerRef.current!, {

@@ -92,3 +92,12 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+
+# Cesium static assets (copied from node_modules)
+ui/public/Assets/
+ui/public/ThirdParty/
+ui/public/Workers/
+ui/public/Widgets/
+ui/public/Cesium.js
+ui/public/index.js
+ui/public/index.cjs
