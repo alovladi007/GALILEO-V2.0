@@ -11,11 +11,38 @@ from .gravity import (
     compute_geoid_height,
 )
 
-__all__ = [
-    'GravityModel',
-    'SphericalHarmonics',
-    'load_egm2008_model',
-    'compute_geoid_height',
-]
+# Session 4: Synthetic Data Generation
+try:
+    from .synthetic import (
+        SyntheticDataGenerator,
+        SimulationConfig,
+        SatelliteConfig,
+        Anomaly,
+        SubsurfaceModel,
+        ForwardModel,
+        TelemetryGenerator,
+    )
+    __all__ = [
+        'GravityModel',
+        'SphericalHarmonics',
+        'load_egm2008_model',
+        'compute_geoid_height',
+        # Synthetic data generation (Session 4)
+        'SyntheticDataGenerator',
+        'SimulationConfig',
+        'SatelliteConfig',
+        'Anomaly',
+        'SubsurfaceModel',
+        'ForwardModel',
+        'TelemetryGenerator',
+    ]
+except ImportError:
+    # Synthetic module requires pandas, pyarrow
+    __all__ = [
+        'GravityModel',
+        'SphericalHarmonics',
+        'load_egm2008_model',
+        'compute_geoid_height',
+    ]
 
-__version__ = '0.1.0'
+__version__ = '0.4.0'
