@@ -37,30 +37,40 @@ export default function GlobeViewer({
 
     const initCesium = async () => {
       try {
+        console.log('Starting Cesium initialization...');
+
         // Set Cesium Ion token
         const token = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN || 'your-token-here';
+        console.log('Setting Ion token...');
         Cesium.Ion.defaultAccessToken = token;
 
         // Set Cesium base URL for assets (Workers, etc.)
         (window as any).CESIUM_BASE_URL = '/';
+        console.log('CESIUM_BASE_URL set to:', (window as any).CESIUM_BASE_URL);
 
         // Configure Cesium to load assets from public directory
         if ((Cesium as any).buildModuleUrl) {
           (Cesium as any).buildModuleUrl.setBaseUrl('/');
         }
 
-        // Create the Viewer
+        console.log('Creating Cesium Viewer...');
+
+        // Create the Viewer with simplified configuration
         const viewer = new Cesium.Viewer(viewerContainerRef.current!, {
-          terrain: Cesium.Terrain.fromWorldTerrain(),
-          timeline: true,
-          animation: true,
-          baseLayerPicker: true,
-          geocoder: true,
+          animation: false,
+          baseLayerPicker: false,
+          fullscreenButton: false,
+          geocoder: false,
           homeButton: true,
-          sceneModePicker: true,
-          navigationHelpButton: true,
-          fullscreenButton: true,
+          infoBox: true,
+          sceneModePicker: false,
+          selectionIndicator: true,
+          timeline: false,
+          navigationHelpButton: false,
+          navigationInstructionsInitiallyVisible: false,
         });
+
+        console.log('Cesium Viewer created successfully!');
 
         viewerRef.current = viewer;
 
@@ -100,19 +110,25 @@ export default function GlobeViewer({
           });
         }
 
+        console.log('Cesium initialization complete!');
         setIsLoading(false);
       } catch (err) {
         console.error('Failed to initialize Cesium:', err);
+        console.error('Error details:', err instanceof Error ? err.stack : err);
         setError(err instanceof Error ? err.message : 'Failed to initialize 3D viewer');
         setIsLoading(false);
       }
     };
 
-    initCesium();
+    // Add a small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      initCesium();
+    }, 100);
 
-    // Cleanup
     return () => {
+      clearTimeout(timer);
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
+        console.log('Cleaning up Cesium Viewer...');
         viewerRef.current.destroy();
       }
     };
