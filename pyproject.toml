@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geosense-platform"
-version = "0.1.0"
+version = "0.3.0"
 description = "Space-based geophysical sensing platform for measuring Earth's gravitational field variations"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -44,8 +44,12 @@ ml = [
     "flax==0.7.0",
 ]
 
+control = [
+    "cvxpy>=1.3.0",  # Required for Model Predictive Control (MPC)
+]
+
 [tool.setuptools.packages.find]
-include = ["sim*", "sensing*", "inversion*", "ml*", "ops*"]
+include = ["sim*", "sensing*", "inversion*", "control*", "ml*", "ops*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
