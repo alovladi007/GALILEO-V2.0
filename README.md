@@ -75,6 +75,35 @@ pip install -e ".[monitoring]"
 
 ---
 
+## 🌐 Run on Localhost
+
+Start the GeoSense Platform web interface on your local machine:
+
+```bash
+# Quick start - run the startup script
+./start_server.sh
+
+# Or manually with uvicorn
+python -m uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Then open your browser to:
+
+- **Dashboard**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs (Interactive Swagger UI)
+- **Health Check**: http://localhost:8000/health
+
+### Available API Endpoints
+
+- `POST /api/propagate` - Propagate orbits from orbital elements
+- `POST /api/formation` - Simulate formation flying dynamics
+- `POST /api/phase` - Calculate laser phase measurements
+- `POST /api/noise` - Compute interferometry noise budgets
+
+See the interactive API documentation at `/docs` for request/response schemas and live testing.
+
+---
+
 ## 🚀 Quick Example
 
 ### Orbit Propagation
@@ -201,6 +230,10 @@ geosense-platform/
 ├── ops/                         # Operations & telemetry
 │   └── __init__.py
 │
+├── api/                         # REST API server ✨ New
+│   ├── __init__.py
+│   └── main.py                  # FastAPI application with web dashboard
+│
 ├── tests/                       # Test suite
 │   ├── unit/
 │   │   └── test_gravity.py
@@ -243,6 +276,7 @@ geosense-platform/
 ├── pyproject.toml              # Python package config
 ├── requirements.txt            # Core dependencies
 ├── docker-compose.yml         # Container orchestration
+├── start_server.sh            # Localhost server startup script ✨ New
 └── README.md                  # This file
 ```
 
