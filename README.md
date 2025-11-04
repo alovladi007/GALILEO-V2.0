@@ -151,7 +151,10 @@ geosense-platform/
 │   └── algorithms.py            # Tikhonov, Bayesian (241 lines)
 │
 ├── sensing/                      # Sensor data processing
-│   └── __init__.py
+│   ├── __init__.py
+│   ├── allan.py                 # Allan deviation & noise characterization
+│   ├── noise.py                 # Laser interferometry noise models
+│   └── phase_model.py           # Phase measurement models
 │
 ├── ml/                          # Machine learning models
 │   └── models/
@@ -163,6 +166,13 @@ geosense-platform/
 │   ├── unit/
 │   │   └── test_gravity.py
 │   └── integration/
+│
+├── examples/                    # Example scripts
+│   ├── README.md
+│   └── session1_demo.py         # Session 1 physics demo
+│
+├── scripts/                     # Utility scripts
+│   └── generate_diagrams.py    # Architecture diagram generator
 │
 ├── ui/                          # Next.js web interface
 │   └── src/
