@@ -15,11 +15,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
-import jax.numpy as jnp
-import numpy as np
 
-# Import GeoSense modules
+# Import GeoSense modules (optional - gracefully degrade if not available)
 try:
+    import jax.numpy as jnp
+    import numpy as np
     from sim.dynamics import (
         two_body_dynamics,
         propagate_orbit_jax,
@@ -30,8 +30,9 @@ try:
     from sensing.noise import total_phase_noise_std
     from sensing.allan import allan_deviation
     IMPORTS_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     IMPORTS_AVAILABLE = False
+    import_error_message = str(e)
 
 app = FastAPI(
     title="GeoSense Platform API",
@@ -494,4 +495,4 @@ async def calculate_noise_budget(request: NoiseRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=5050)

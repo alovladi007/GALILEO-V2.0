@@ -84,14 +84,14 @@ Start the GeoSense Platform web interface on your local machine:
 ./start_server.sh
 
 # Or manually with uvicorn
-python -m uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+python3 -m uvicorn api.main:app --reload --host 0.0.0.0 --port 5050
 ```
 
 Then open your browser to:
 
-- **Dashboard**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs (Interactive Swagger UI)
-- **Health Check**: http://localhost:8000/health
+- **Dashboard**: http://localhost:5050
+- **API Documentation**: http://localhost:5050/docs (Interactive Swagger UI)
+- **Health Check**: http://localhost:5050/health
 
 ### Available API Endpoints
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # GeoSense Platform Server Startup Script
-# Starts the FastAPI application on localhost:8000
+# Starts the FastAPI application on localhost:5050
 
 echo "🛰️  Starting GeoSense Platform API Server..."
 echo ""
@@ -27,12 +27,12 @@ if ! python3 -c "import fastapi" 2>/dev/null; then
 fi
 
 # Start the server
-echo "🚀 Server starting at http://localhost:8000"
+echo "🚀 Server starting at http://localhost:5050"
 echo ""
 echo "Available endpoints:"
-echo "  • Dashboard:     http://localhost:8000"
-echo "  • API Docs:      http://localhost:8000/docs"
-echo "  • Health Check:  http://localhost:8000/health"
+echo "  • Dashboard:     http://localhost:5050"
+echo "  • API Docs:      http://localhost:5050/docs"
+echo "  • Health Check:  http://localhost:5050/health"
 echo ""
 echo "Press CTRL+C to stop the server"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -40,4 +40,4 @@ echo ""
 
 # Run the server
 cd "$(dirname "$0")"
-python3 -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+python3 -m uvicorn api.main:app --host 0.0.0.0 --port 5050 --reload
