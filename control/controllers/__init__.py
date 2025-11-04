@@ -59,6 +59,21 @@ from .collision_avoidance import (
     predict_collision_risk,
 )
 
+# Session 3: ML-Enhanced Control
+try:
+    from .mpc_ml import (
+        MLEnhancedMPC,
+        AdaptiveMPC,
+    )
+    from .safety_ml import (
+        MLStationKeeping,
+        MLCollisionAvoidance,
+        IntegratedSafetyController,
+    )
+except ImportError:
+    # Requires ML dependencies
+    pass
+
 __all__ = [
     # LQR functions
     'solve_continuous_riccati',
@@ -96,4 +111,10 @@ __all__ = [
     'FormationSafetyMonitor',
     'compute_separation_matrix',
     'predict_collision_risk',
+    # ML-Enhanced Control (Session 3)
+    'MLEnhancedMPC',
+    'AdaptiveMPC',
+    'MLStationKeeping',
+    'MLCollisionAvoidance',
+    'IntegratedSafetyController',
 ]

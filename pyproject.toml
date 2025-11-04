@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geosense-platform"
-version = "0.3.0"
-description = "Space-based geophysical sensing platform for measuring Earth's gravitational field variations"
+version = "0.4.0"
+description = "AI-enhanced space-based geophysical sensing platform for measuring Earth's gravitational field variations"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Proprietary - Research Use Only"}

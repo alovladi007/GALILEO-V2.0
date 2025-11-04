@@ -4,9 +4,9 @@
 [![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-**Space-based geophysical sensing platform for measuring Earth's gravitational field variations**
+**AI-enhanced space-based geophysical sensing platform for measuring Earth's gravitational field variations**
 
-A high-fidelity orbital dynamics and gravity field inversion platform designed for satellite-based gravimetry missions. Built with JAX for hardware acceleration and automatic differentiation.
+A high-fidelity orbital dynamics, guidance/navigation/control, and machine learning platform designed for autonomous satellite-based gravimetry missions. Built with JAX for hardware acceleration and automatic differentiation.
 
 ---
 
@@ -17,6 +17,7 @@ GALILEO V2.0 (GeoSense Platform) provides a complete toolkit for:
 - **Orbital Dynamics**: High-precision orbit propagation with perturbations (J2, drag, SRP)
 - **Formation Flying**: Hill-Clohessy-Wiltshire equations for satellite formations
 - **GNC Systems**: LQR/LQG/MPC controllers, Extended Kalman Filter navigation
+- **Machine Learning**: LSTM orbit prediction, VAE anomaly detection, RL-based control
 - **Laser Interferometry**: Phase measurement models and noise characterization
 - **Gravity Field Modeling**: Spherical harmonics gravity field representation (EGM2008)
 - **Geophysical Inversion**: Tikhonov and Bayesian algorithms for mass distribution recovery
@@ -173,12 +174,14 @@ geosense-platform/
 ├── inversion/                    # Geophysical inversion
 │   └── algorithms.py            # Tikhonov, Bayesian (241 lines)
 │
-├── control/                     # GNC systems (Session 2)
+├── control/                     # GNC systems (Sessions 2+3)
 │   ├── controllers/             # Control algorithms
 │   │   ├── lqr.py              # LQR controller (528 lines)
 │   │   ├── lqg.py              # LQG controller (555 lines)
 │   │   ├── mpc.py              # Model Predictive Control (630 lines)
+│   │   ├── mpc_ml.py           # ML-enhanced MPC (476 lines) ✨ Session 3
 │   │   ├── station_keeping.py  # Station-keeping (682 lines)
+│   │   ├── safety_ml.py        # ML safety systems (675 lines) ✨ Session 3
 │   │   └── collision_avoidance.py # Collision avoidance (633 lines)
 │   └── navigation/             # State estimation
 │       └── ekf.py              # Extended Kalman Filter (636 lines)
@@ -189,8 +192,11 @@ geosense-platform/
 │   ├── noise.py                 # Laser interferometry noise models
 │   └── phase_model.py           # Phase measurement models
 │
-├── ml/                          # Machine learning models
-│   └── models/
+├── ml/                          # Machine learning (Session 3) ✨
+│   ├── models.py               # Neural architectures (608 lines)
+│   ├── reinforcement.py        # RL algorithms (651 lines)
+│   ├── training.py             # Training infrastructure (685 lines)
+│   └── inference.py            # Deployment & optimization (651 lines)
 │
 ├── ops/                         # Operations & telemetry
 │   └── __init__.py
@@ -204,7 +210,9 @@ geosense-platform/
 │   ├── README.md
 │   ├── session1_demo.py         # Session 1 physics demo
 │   ├── session2_demo.py         # Session 2 GNC demo
-│   └── session2_complete_demo.py # Complete Session 2 showcase
+│   ├── session2_complete_demo.py # Complete Session 2 showcase
+│   ├── session3_demo.py         # Session 3 ML demo ✨
+│   └── complete_demo.py         # Full platform integration ✨
 │
 ├── scripts/                     # Utility scripts
 │   └── generate_diagrams.py    # Architecture diagram generator
@@ -442,19 +450,28 @@ pytest tests/ --cov=sim --cov=inversion
 - [x] Extended Kalman Filter (636 lines)
 - [x] Complete GNC demonstrations
 
-### Session 3: Advanced Features (📋 Planned)
-- [ ] Machine learning integration
-- [ ] Neural network denoising
-- [ ] Anomaly detection
-- [ ] Advanced gravity field modeling
+### Session 3: Machine Learning & AI (✅ Complete)
+- [x] Neural network models (LSTM, VAE, GNN, Attention) (608 lines)
+- [x] Reinforcement learning (PPO, SAC, Multi-agent) (651 lines)
+- [x] Training infrastructure & synthetic data (685 lines)
+- [x] Inference engine with quantization (651 lines)
+- [x] ML-enhanced MPC (476 lines)
+- [x] ML safety & station-keeping (675 lines)
+- [x] Complete ML demonstrations (772 + 601 lines)
 
-### Session 4: Operations (📋 Planned)
+### Session 4: Ground Systems (📋 Planned)
+- [ ] Mission planning tools
+- [ ] Data processing pipeline
+- [ ] Cloud infrastructure
+- [ ] Real-time telemetry
+
+### Session 5: Operations (📋 Planned)
 - [ ] Mission planning
 - [ ] Task scheduling
 - [ ] Telemetry management
 - [ ] Real-time monitoring
 
-### Session 5: Visualization (📋 Planned)
+### Session 6: Visualization (📋 Planned)
 - [ ] Complete UI implementation
 - [ ] Real-time orbit visualization
 - [ ] Gravity anomaly mapping
@@ -503,12 +520,12 @@ This software is provided for research and educational purposes. See [compliance
 ![Last Commit](https://img.shields.io/github/last-commit/alovladi007/GALILEO-V2.0)
 
 **Current Status**:
-- Repository Size: ~7.2 MB
-- Python Files: 27 (13 Session 1 + 11 Session 2 + 3 sensing)
-- Total Code: ~8,700 lines
-- Sessions: 0 (Architecture) + 1 (Physics) + 2 (GNC) = Complete
+- Repository Size: ~7.6 MB
+- Python Files: 38 (13 Session 1 + 11 Session 2 + 9 Session 3 + 5 support)
+- Total Code: ~13,800 lines
+- Sessions: 0 (Architecture) + 1 (Physics) + 2 (GNC) + 3 (ML/AI) = ✅ Complete
 - Code Quality: Type-safe, well-documented, tested, JIT-compiled
-- Structure: Professional Python package
+- Structure: Professional Python package with ML capabilities
 
 ---
 
