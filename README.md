@@ -21,6 +21,7 @@ GALILEO V2.0 (GeoSense Platform) provides a complete toolkit for:
 - **Laser Interferometry**: Phase measurement models and noise characterization
 - **Gravity Field Modeling**: Spherical harmonics gravity field representation (EGM2008)
 - **Geophysical Inversion**: Tikhonov and Bayesian algorithms for mass distribution recovery
+- **Synthetic Data Generation**: Procedural subsurface anomaly generation with forward modeling (Session 4)
 - **3D Visualization**: CesiumJS-based interactive globe viewer
 - **Mission Operations**: Task scheduling, telemetry management, and monitoring
 
@@ -113,7 +114,7 @@ npm run dev
 ```
 
 Frontend:
-- **3D Dashboard**: http://localhost:3000
+- **3D Dashboard**: http://localhost:3001 (or http://localhost:3000 if available)
 
 ### Available API Endpoints
 
@@ -208,6 +209,42 @@ inversion = TikhonovInversion(config)
 mass_distribution = inversion.solve(gravity_measurements, observation_matrix)
 ```
 
+### Synthetic Data Generation (Session 4)
+
+```python
+from sim.synthetic import (
+    SyntheticDataGenerator,
+    SimulationConfig,
+    SatelliteConfig,
+)
+
+# Configure simulation
+sim_config = SimulationConfig(
+    grid_size=(100, 100, 50),  # 100x100x50 voxels
+    grid_spacing=10.0,  # 10 meters per voxel
+    time_steps=100,  # 100 time samples
+    seed=42,  # Reproducibility
+    noise_level=0.1,  # 0.1 radians
+)
+
+sat_config = SatelliteConfig(
+    orbital_height=500e3,  # 500 km altitude
+    baseline_nominal=200.0,  # 200 m baseline
+    baseline_variation=10.0,  # ±10 m variation
+)
+
+# Generate synthetic data
+generator = SyntheticDataGenerator(sim_config, sat_config)
+results = generator.generate(output_dir="./data")
+
+# Access generated data
+import pandas as pd
+import numpy as np
+
+telemetry = pd.read_parquet(results['telemetry_path'])
+phase_data = np.load(results['phase_path'])
+```
+
 ---
 
 ## 📁 Repository Structure
@@ -216,6 +253,7 @@ mass_distribution = inversion.solve(gravity_measurements, observation_matrix)
 geosense-platform/
 ├── sim/                          # Simulation modules
 │   ├── gravity.py               # Gravity field modeling (EGM2008)
+│   ├── synthetic.py             # Synthetic data generation (814 lines) ✨ Session 4
 │   └── dynamics/                # Orbital dynamics
 │       ├── keplerian.py         # Two-body dynamics (319 lines)
 │       ├── perturbations.py     # J2, drag, SRP (393 lines)

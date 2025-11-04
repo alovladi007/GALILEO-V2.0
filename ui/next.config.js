@@ -22,9 +22,6 @@ const nextConfig = {
 
     return config;
   },
-  experimental: {
-    serverActions: true,
-  },
   env: {
     CESIUM_BASE_URL: '/cesium',
   },
