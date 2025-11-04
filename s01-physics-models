@@ -1,3 +1,0 @@
-0000000000000000000000000000000000000000 1611ce348423e3db351e815b9401f865a6d318ca GeoSense Dev <dev@geosense.platform> 1762218364 +0000	branch: Created from HEAD
-1611ce348423e3db351e815b9401f865a6d318ca 10eeb004e3617b3740230e8753e8e4f45b42ede2 GeoSense Dev <dev@geosense.platform> 1762218726 +0000	commit: Session 1 Progress: Complete orbital dynamics and interferometry phase model
-10eeb004e3617b3740230e8753e8e4f45b42ede2 e2a21f3e7f0ab92369a380e36615dd2f83d2f7ad GeoSense Dev <dev@geosense.platform> 1762219591 +0000	commit: Session 1: Add noise models, Allan deviation, and complete demo
