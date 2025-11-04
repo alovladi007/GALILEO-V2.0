@@ -215,10 +215,15 @@ geosense-platform/
 │           └── GlobeViewer.tsx  # CesiumJS 3D viewer
 │
 ├── docs/                        # Documentation
-│   └── architecture/
-│       ├── 01_context_diagram.png
-│       ├── 02_container_diagram.png
-│       └── 03_component_diagram.png
+│   ├── architecture/           # Architecture diagrams
+│   │   ├── 01_context_diagram.png
+│   │   ├── 02_container_diagram.png
+│   │   └── 03_component_diagram.png
+│   └── figures/               # Visualizations & performance plots
+│       ├── allan_deviation_vs_time.png
+│       ├── link_budget_breakdown.png
+│       ├── snr_vs_baseline.png
+│       └── README.md
 │
 ├── compliance/                  # Legal & ethical docs
 │   ├── ETHICS.md
@@ -367,10 +372,11 @@ pre-commit run --all-files
 ## 📖 Documentation
 
 - **[CONSOLIDATION_SUMMARY.md](CONSOLIDATION_SUMMARY.md)**: Repository reorganization details
-- **[COMPLETE_FILE_TREE.txt](COMPLETE_FILE_TREE.txt)**: Complete file listing
+- **[VALIDATION_REPORT.md](VALIDATION_REPORT.md)**: Pre-Session 3 validation report
 - **[compliance/ETHICS.md](compliance/ETHICS.md)**: Ethical considerations
 - **[compliance/LEGAL.md](compliance/LEGAL.md)**: Legal framework
 - **Architecture Diagrams**: See [docs/architecture/](docs/architecture/)
+- **Visualizations & Plots**: See [docs/figures/](docs/figures/) - Allan deviation, link budgets, SNR analysis
 
 ### API Documentation
 
