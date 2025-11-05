@@ -2052,6 +2052,11 @@ async def submit_workflow(request: dict):
     try:
         from api.services import get_workflow_service
         service = get_workflow_service()
+
+        # Ensure required parameters key exists
+        if 'parameters' not in request:
+            request['parameters'] = {}
+
         return service.submit_workflow(**request)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Workflow submission failed: {str(e)}")

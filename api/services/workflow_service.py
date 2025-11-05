@@ -80,6 +80,10 @@ class WorkflowService:
 
     def __init__(self):
         """Initialize workflow service."""
+        # Always initialize workflows dictionary
+        self.workflows = {}  # In-memory workflow tracking
+        self.minio_client = None
+
         if not OPS_IMPORTS_AVAILABLE:
             print("Warning: Ops infrastructure not available.")
             return
@@ -90,7 +94,6 @@ class WorkflowService:
 
         # Initialize infrastructure
         self.minio_client = get_minio_client()
-        self.workflows = {}  # In-memory workflow tracking
 
     # =================================================================
     # Workflow Templates
