@@ -947,6 +947,202 @@ async def list_emulators():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Emulator listing failed: {str(e)}")
 
+
+# =============================================================================
+# CALIBRATION ENDPOINTS - Sensor Calibration and Characterization
+# =============================================================================
+
+@app.post("/api/calibration/allan-deviation")
+async def compute_allan_deviation(request: dict):
+    """
+    Compute Allan deviation for frequency stability analysis.
+
+    Body:
+    {
+        "data": [array of phase measurements],
+        "sample_rate": 1000.0,  # Hz
+        "tau_min": 0.1,  # seconds
+        "tau_max": 100.0,  # seconds
+        "n_taus": 20,
+        "method": "overlapping"  # or "standard", "modified"
+    }
+
+    Returns Allan deviation results with tau values and stability metrics.
+    """
+    try:
+        from api.services import get_calibration_service
+        import numpy as np
+
+        service = get_calibration_service()
+
+        data = np.array(request['data'])
+        sample_rate = request['sample_rate']
+        tau_min = request.get('tau_min', 0.1)
+        tau_max = request.get('tau_max', 100.0)
+        n_taus = request.get('n_taus', 20)
+        method = request.get('method', 'overlapping')
+
+        result = service.compute_allan_deviation(
+            data=data,
+            sample_rate=sample_rate,
+            tau_min=tau_min,
+            tau_max=tau_max,
+            n_taus=n_taus,
+            method=method
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Allan deviation computation failed: {str(e)}")
+
+
+@app.post("/api/calibration/phase-from-range")
+async def calibrate_phase_from_range(request: dict):
+    """
+    Convert range measurements to phase for laser interferometry.
+
+    Body:
+    {
+        "range_data": [array of range in km],
+        "wavelength": 1064e-9,  # meters
+        "phase_offset": 0.0  # radians
+    }
+
+    Returns phase measurements, phase rates, and calibration info.
+    """
+    try:
+        from api.services import get_calibration_service
+        import numpy as np
+
+        service = get_calibration_service()
+
+        range_data = np.array(request['range_data'])
+        wavelength = request.get('wavelength', 1064e-9)
+        phase_offset = request.get('phase_offset', 0.0)
+
+        result = service.calibrate_phase_from_range(
+            range_data=range_data,
+            wavelength=wavelength,
+            phase_offset=phase_offset
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Phase calibration failed: {str(e)}")
+
+
+@app.post("/api/calibration/noise-budget")
+async def compute_noise_budget(request: dict):
+    """
+    Compute comprehensive phase noise budget.
+
+    Body:
+    {
+        "power": 1.0,  # Watts
+        "range_km": 100.0,  # km
+        "range_rate_km_s": 0.1,  # km/s
+        "frequency_stability": 1e-13,
+        "wavelength": 1064e-9  # meters
+    }
+
+    Returns noise budget breakdown with shot noise, frequency noise, etc.
+    """
+    try:
+        from api.services import get_calibration_service
+
+        service = get_calibration_service()
+
+        power = request['power']
+        range_km = request['range_km']
+        range_rate_km_s = request['range_rate_km_s']
+        frequency_stability = request.get('frequency_stability', 1e-13)
+        wavelength = request.get('wavelength', 1064e-9)
+
+        result = service.compute_phase_noise_budget(
+            power=power,
+            range_km=range_km,
+            range_rate_km_s=range_rate_km_s,
+            frequency_stability=frequency_stability,
+            wavelength=wavelength
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Noise budget computation failed: {str(e)}")
+
+
+@app.post("/api/calibration/measurement-quality")
+async def analyze_measurement_quality(request: dict):
+    """
+    Analyze measurement quality metrics.
+
+    Body:
+    {
+        "measurements": [array of measured values],
+        "timestamps": [array of timestamps],
+        "reference": [array of reference values]  # optional
+    }
+
+    Returns quality metrics: mean, std, rms, errors, correlation, etc.
+    """
+    try:
+        from api.services import get_calibration_service
+        import numpy as np
+
+        service = get_calibration_service()
+
+        measurements = np.array(request['measurements'])
+        timestamps = np.array(request['timestamps'])
+        reference = np.array(request['reference']) if 'reference' in request else None
+
+        result = service.analyze_measurement_quality(
+            measurements=measurements,
+            timestamps=timestamps,
+            reference=reference
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Quality analysis failed: {str(e)}")
+
+
+@app.post("/api/calibration/identify-noise")
+async def identify_noise_types(request: dict):
+    """
+    Identify dominant noise types from Allan deviation slope.
+
+    Body:
+    {
+        "tau_values": [array of averaging times],
+        "adev_values": [array of Allan deviation values]
+    }
+
+    Returns noise type identification with slope analysis and interpretation.
+    """
+    try:
+        from api.services import get_calibration_service
+        import numpy as np
+
+        service = get_calibration_service()
+
+        tau_values = np.array(request['tau_values'])
+        adev_values = np.array(request['adev_values'])
+
+        result = service.identify_noise_types(
+            tau_values=tau_values,
+            adev_values=adev_values
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Noise identification failed: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)
