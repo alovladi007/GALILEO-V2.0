@@ -33,27 +33,34 @@ export default function GlobeViewer({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!viewerContainerRef.current) return;
+    console.log('[GlobeViewer] useEffect triggered');
+    console.log('[GlobeViewer] containerRef.current:', viewerContainerRef.current);
+
+    if (!viewerContainerRef.current) {
+      console.error('[GlobeViewer] containerRef is null, returning early');
+      return;
+    }
 
     const initCesium = async () => {
       try {
-        console.log('Starting Cesium initialization...');
+        console.log('[GlobeViewer] Starting Cesium initialization...');
 
         // Set Cesium Ion token
         const token = process.env.NEXT_PUBLIC_CESIUM_ION_TOKEN || 'your-token-here';
-        console.log('Setting Ion token...');
+        console.log('[GlobeViewer] Setting Ion token:', token.substring(0, 20) + '...');
         Cesium.Ion.defaultAccessToken = token;
 
         // Set Cesium base URL for assets (Workers, etc.)
         (window as any).CESIUM_BASE_URL = '/';
-        console.log('CESIUM_BASE_URL set to:', (window as any).CESIUM_BASE_URL);
+        console.log('[GlobeViewer] CESIUM_BASE_URL set to:', (window as any).CESIUM_BASE_URL);
 
         // Configure Cesium to load assets from public directory
         if ((Cesium as any).buildModuleUrl) {
           (Cesium as any).buildModuleUrl.setBaseUrl('/');
+          console.log('[GlobeViewer] buildModuleUrl.setBaseUrl set to /');
         }
 
-        console.log('Creating Cesium Viewer...');
+        console.log('[GlobeViewer] About to create Cesium Viewer...');
 
         // Create the Viewer with offline imagery configuration
         const viewer = new Cesium.Viewer(viewerContainerRef.current!, {
@@ -76,7 +83,8 @@ export default function GlobeViewer({
           ),
         });
 
-        console.log('Cesium Viewer created successfully!');
+        console.log('[GlobeViewer] ✅ Cesium Viewer created successfully!');
+        console.log('[GlobeViewer] Viewer object:', viewer);
 
         viewerRef.current = viewer;
 
@@ -116,59 +124,63 @@ export default function GlobeViewer({
           });
         }
 
-        console.log('Cesium initialization complete!');
+        console.log('[GlobeViewer] 🎉 Cesium initialization complete!');
+        console.log('[GlobeViewer] Setting isLoading to false...');
         setIsLoading(false);
+        console.log('[GlobeViewer] ✅ isLoading set to false - globe should now be visible!');
       } catch (err) {
-        console.error('Failed to initialize Cesium:', err);
-        console.error('Error details:', err instanceof Error ? err.stack : err);
+        console.error('[GlobeViewer] ❌ Failed to initialize Cesium:', err);
+        console.error('[GlobeViewer] Error details:', err instanceof Error ? err.stack : err);
         setError(err instanceof Error ? err.message : 'Failed to initialize 3D viewer');
         setIsLoading(false);
       }
     };
 
     // Add a small delay to ensure DOM is ready
+    console.log('[GlobeViewer] Setting up 100ms timer before initialization...');
     const timer = setTimeout(() => {
+      console.log('[GlobeViewer] Timer fired, calling initCesium()...');
       initCesium();
     }, 100);
 
     return () => {
+      console.log('[GlobeViewer] Cleanup function called');
       clearTimeout(timer);
       if (viewerRef.current && !viewerRef.current.isDestroyed()) {
-        console.log('Cleaning up Cesium Viewer...');
+        console.log('[GlobeViewer] Destroying Cesium Viewer...');
         viewerRef.current.destroy();
       }
     };
   }, [satellitePositions, gravityData]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Initializing Cesium...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-center max-w-md">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-white mb-2">Failed to Load 3D Viewer</h2>
-          <p className="text-gray-400 mb-4">{error}</p>
-          <p className="text-sm text-gray-500">
-            Please check your Cesium Ion token configuration in .env.local
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative w-full h-screen">
+      {/* Always render the viewer container so the ref is attached */}
       <div ref={viewerContainerRef} className="w-full h-full" />
+
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-400">Initializing Cesium...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error overlay */}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-50">
+          <div className="text-center max-w-md">
+            <div className="text-red-500 text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-white mb-2">Failed to Load 3D Viewer</h2>
+            <p className="text-gray-400 mb-4">{error}</p>
+            <p className="text-sm text-gray-500">
+              Please check your Cesium Ion token configuration in .env.local
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Info panel */}
       {selectedPoint !== null && gravityData[selectedPoint] && (

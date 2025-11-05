@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geosense-platform"
-version = "0.5.0"
-description = "AI-enhanced space-based geophysical sensing platform for measuring Earth's gravitational field variations with synthetic data generation"
+version = "0.6.0"
+description = "AI-enhanced space-based geophysical sensing platform with geophysical inversion engine and physics-informed ML acceleration"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Proprietary - Research Use Only"}
@@ -44,6 +44,9 @@ dev = [
 ml = [
     "torch==2.0.0",
     "flax==0.7.0",
+    "torchvision>=0.15.0",  # Session 6: Image processing for U-Net
+    "scikit-image>=0.20.0",  # Session 6: SSIM metric
+    "Pillow>=9.0.0",  # Session 6: Image handling
 ]
 
 control = [

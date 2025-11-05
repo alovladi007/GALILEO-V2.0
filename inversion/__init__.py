@@ -1,21 +1,35 @@
 """
-Geophysical Inversion Package
+Geophysical Inversion Engine
+=============================
 
-Implements algorithms for recovering Earth's mass distribution from gravity measurements.
+Comprehensive toolkit for solving geophysical inverse problems.
 """
 
-from .algorithms import (
-    InversionConfig,
-    TikhonovInversion,
-    BayesianInversion,
-    resolution_matrix,
+from .solvers import (
+    TikhonovSolver,
+    GaussNewtonSolver,
+    BayesianMAPSolver,
+    UncertaintyAnalysis
+)
+
+from .regularizers import (
+    SmoothnessRegularizer,
+    TotalVariationRegularizer,
+    SparsityRegularizer,
+    GeologicPriorRegularizer,
+    CrossGradientRegularizer,
+    MinimumSupportRegularizer
 )
 
 __all__ = [
-    'InversionConfig',
-    'TikhonovInversion',
-    'BayesianInversion',
-    'resolution_matrix',
+    'TikhonovSolver',
+    'GaussNewtonSolver',
+    'BayesianMAPSolver',
+    'UncertaintyAnalysis',
+    'SmoothnessRegularizer',
+    'TotalVariationRegularizer',
+    'SparsityRegularizer',
+    'GeologicPriorRegularizer',
+    'CrossGradientRegularizer',
+    'MinimumSupportRegularizer'
 ]
-
-__version__ = '0.1.0'
