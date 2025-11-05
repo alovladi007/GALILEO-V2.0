@@ -1,8 +1,0 @@
-# Compliance Module Requirements
-# Session 13 - Security & Compliance Hardening
-
-# Core cryptography library for secrets management
-cryptography>=41.0.0
-
-# Testing (optional)
-# unittest is part of Python standard library
