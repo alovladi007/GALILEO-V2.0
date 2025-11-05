@@ -1143,6 +1143,482 @@ async def identify_noise_types(request: dict):
         raise HTTPException(status_code=500, detail=f"Noise identification failed: {str(e)}")
 
 
+# =============================================================================
+# MACHINE LEARNING ENDPOINTS - PINN and U-Net Training/Inference
+# =============================================================================
+
+@app.post("/api/ml/pinn/create")
+async def create_pinn_model(request: dict):
+    """
+    Create Physics-Informed Neural Network model.
+
+    Body:
+    {
+        "model_id": "my_pinn",
+        "hidden_layers": [64, 128, 128, 64],
+        "activation": "tanh"  # or "relu", "silu"
+    }
+
+    Returns model configuration and parameter count.
+    """
+    try:
+        from api.services import get_ml_service
+
+        service = get_ml_service()
+
+        model_id = request.get('model_id', 'default')
+        hidden_layers = request.get('hidden_layers', [64, 128, 128, 64])
+        activation = request.get('activation', 'tanh')
+
+        result = service.create_pinn_model(
+            model_id=model_id,
+            hidden_layers=hidden_layers,
+            activation=activation
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PINN creation failed: {str(e)}")
+
+
+@app.post("/api/ml/pinn/train")
+async def train_pinn_model(request: dict):
+    """
+    Train PINN model with synthetic gravity data.
+
+    Body:
+    {
+        "model_id": "my_pinn",
+        "n_samples": 5000,
+        "epochs": 100,
+        "batch_size": 64,
+        "lr": 0.001,
+        "lambda_physics": 1.0,
+        "val_split": 0.2
+    }
+
+    Returns training history and final metrics.
+    """
+    try:
+        from api.services import get_ml_service
+
+        service = get_ml_service()
+
+        model_id = request.get('model_id', 'default')
+        n_samples = request.get('n_samples', 5000)
+        epochs = request.get('epochs', 100)
+        batch_size = request.get('batch_size', 64)
+        lr = request.get('lr', 1e-3)
+        lambda_physics = request.get('lambda_physics', 1.0)
+        val_split = request.get('val_split', 0.2)
+
+        result = service.train_pinn(
+            model_id=model_id,
+            n_samples=n_samples,
+            epochs=epochs,
+            batch_size=batch_size,
+            lr=lr,
+            lambda_physics=lambda_physics,
+            val_split=val_split
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PINN training failed: {str(e)}")
+
+
+@app.post("/api/ml/pinn/inference")
+async def pinn_inference(request: dict):
+    """
+    Run inference with trained PINN model.
+
+    Body:
+    {
+        "model_id": "my_pinn",
+        "coordinates": [[x1, y1, z1], [x2, y2, z2], ...],  # shape (N, 3)
+        "densities": [rho1, rho2, ...]  # shape (N,)
+    }
+
+    Returns predicted gravity field vectors.
+    """
+    try:
+        from api.services import get_ml_service
+        import numpy as np
+
+        service = get_ml_service()
+
+        model_id = request['model_id']
+        coordinates = np.array(request['coordinates'])
+        densities = np.array(request['densities'])
+
+        result = service.pinn_inference(
+            model_id=model_id,
+            coordinates=coordinates,
+            densities=densities
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PINN inference failed: {str(e)}")
+
+
+@app.post("/api/ml/unet/create")
+async def create_unet_model(request: dict):
+    """
+    Create U-Net model for gravity field denoising.
+
+    Body:
+    {
+        "model_id": "my_unet",
+        "in_channels": 1,
+        "out_channels": 1,
+        "base_channels": 64,
+        "depth": 4,
+        "dropout": 0.1
+    }
+
+    Returns model configuration.
+    """
+    try:
+        from api.services import get_ml_service
+
+        service = get_ml_service()
+
+        model_id = request.get('model_id', 'default')
+        in_channels = request.get('in_channels', 1)
+        out_channels = request.get('out_channels', 1)
+        base_channels = request.get('base_channels', 64)
+        depth = request.get('depth', 4)
+        dropout = request.get('dropout', 0.1)
+
+        result = service.create_unet_model(
+            model_id=model_id,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            base_channels=base_channels,
+            depth=depth,
+            dropout=dropout
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"UNet creation failed: {str(e)}")
+
+
+@app.post("/api/ml/unet/train")
+async def train_unet_model(request: dict):
+    """
+    Train U-Net model with synthetic phase-gravity pairs.
+
+    Body:
+    {
+        "model_id": "my_unet",
+        "n_samples": 500,
+        "image_size": 128,
+        "noise_level": 0.1,
+        "epochs": 100,
+        "batch_size": 8,
+        "lr": 0.001,
+        "loss_fn": "mse",  # or "mae", "huber"
+        "val_split": 0.2
+    }
+
+    Returns training history with PSNR, SSIM metrics.
+    """
+    try:
+        from api.services import get_ml_service
+
+        service = get_ml_service()
+
+        model_id = request.get('model_id', 'default')
+        n_samples = request.get('n_samples', 500)
+        image_size = request.get('image_size', 128)
+        noise_level = request.get('noise_level', 0.1)
+        epochs = request.get('epochs', 100)
+        batch_size = request.get('batch_size', 8)
+        lr = request.get('lr', 1e-3)
+        loss_fn = request.get('loss_fn', 'mse')
+        val_split = request.get('val_split', 0.2)
+
+        result = service.train_unet(
+            model_id=model_id,
+            n_samples=n_samples,
+            image_size=image_size,
+            noise_level=noise_level,
+            epochs=epochs,
+            batch_size=batch_size,
+            lr=lr,
+            loss_fn=loss_fn,
+            val_split=val_split
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"UNet training failed: {str(e)}")
+
+
+@app.post("/api/ml/unet/inference")
+async def unet_inference(request: dict):
+    """
+    Run inference with trained U-Net model.
+
+    Body:
+    {
+        "model_id": "my_unet",
+        "phase_data": [[...], [...], ...]  # 2D array (H, W) or 3D (N, H, W)
+    }
+
+    Returns denoised gravity field prediction.
+    """
+    try:
+        from api.services import get_ml_service
+        import numpy as np
+
+        service = get_ml_service()
+
+        model_id = request['model_id']
+        phase_data = np.array(request['phase_data'])
+
+        result = service.unet_inference(
+            model_id=model_id,
+            phase_data=phase_data
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"UNet inference failed: {str(e)}")
+
+
+@app.post("/api/ml/unet/uncertainty")
+async def unet_uncertainty_estimation(request: dict):
+    """
+    Estimate prediction uncertainty using MC Dropout.
+
+    Body:
+    {
+        "model_id": "my_unet",
+        "phase_data": [[...], [...], ...],
+        "n_samples": 50  # Number of MC dropout samples
+    }
+
+    Returns predictions with uncertainty estimates.
+    """
+    try:
+        from api.services import get_ml_service
+        import numpy as np
+
+        service = get_ml_service()
+
+        model_id = request['model_id']
+        phase_data = np.array(request['phase_data'])
+        n_samples = request.get('n_samples', 50)
+
+        result = service.unet_uncertainty_estimation(
+            model_id=model_id,
+            phase_data=phase_data,
+            n_samples=n_samples
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Uncertainty estimation failed: {str(e)}")
+
+
+@app.post("/api/ml/pinn/save")
+async def save_pinn_model(request: dict):
+    """
+    Save PINN model to disk.
+
+    Body:
+    {
+        "model_id": "my_pinn",
+        "filename": "my_pinn.pth"  # optional
+    }
+
+    Returns save confirmation.
+    """
+    try:
+        from api.services import get_ml_service
+
+        service = get_ml_service()
+
+        model_id = request['model_id']
+        filename = request.get('filename')
+
+        result = service.save_pinn_model(
+            model_id=model_id,
+            filename=filename
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PINN save failed: {str(e)}")
+
+
+@app.post("/api/ml/pinn/load")
+async def load_pinn_model(request: dict):
+    """
+    Load PINN model from disk.
+
+    Body:
+    {
+        "model_id": "my_pinn",
+        "filepath": "./models/my_pinn.pth",
+        "hidden_layers": [64, 128, 128, 64],
+        "activation": "tanh"
+    }
+
+    Returns load confirmation.
+    """
+    try:
+        from api.services import get_ml_service
+
+        service = get_ml_service()
+
+        model_id = request['model_id']
+        filepath = request['filepath']
+        hidden_layers = request.get('hidden_layers', [64, 128, 128, 64])
+        activation = request.get('activation', 'tanh')
+
+        result = service.load_pinn_model(
+            model_id=model_id,
+            filepath=filepath,
+            hidden_layers=hidden_layers,
+            activation=activation
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PINN load failed: {str(e)}")
+
+
+@app.post("/api/ml/unet/save")
+async def save_unet_model(request: dict):
+    """
+    Save U-Net model to disk.
+
+    Body:
+    {
+        "model_id": "my_unet",
+        "filename": "my_unet.pth"  # optional
+    }
+
+    Returns save confirmation.
+    """
+    try:
+        from api.services import get_ml_service
+
+        service = get_ml_service()
+
+        model_id = request['model_id']
+        filename = request.get('filename')
+
+        result = service.save_unet_model(
+            model_id=model_id,
+            filename=filename
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"UNet save failed: {str(e)}")
+
+
+@app.post("/api/ml/unet/load")
+async def load_unet_model(request: dict):
+    """
+    Load U-Net model from disk.
+
+    Body:
+    {
+        "model_id": "my_unet",
+        "filepath": "./models/my_unet.pth",
+        "in_channels": 1,
+        "out_channels": 1,
+        "base_channels": 64,
+        "depth": 4
+    }
+
+    Returns load confirmation.
+    """
+    try:
+        from api.services import get_ml_service
+
+        service = get_ml_service()
+
+        model_id = request['model_id']
+        filepath = request['filepath']
+        in_channels = request.get('in_channels', 1)
+        out_channels = request.get('out_channels', 1)
+        base_channels = request.get('base_channels', 64)
+        depth = request.get('depth', 4)
+
+        result = service.load_unet_model(
+            model_id=model_id,
+            filepath=filepath,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            base_channels=base_channels,
+            depth=depth
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"UNet load failed: {str(e)}")
+
+
+@app.get("/api/ml/models")
+async def list_ml_models():
+    """
+    List all loaded ML models.
+
+    Returns lists of PINN and U-Net models currently in memory.
+    """
+    try:
+        from api.services import get_ml_service
+
+        service = get_ml_service()
+
+        return service.list_models()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Model listing failed: {str(e)}")
+
+
+@app.get("/api/ml/model/{model_type}/{model_id}")
+async def get_model_info(model_type: str, model_id: str):
+    """
+    Get information about a specific model.
+
+    Path params:
+        model_type: 'pinn' or 'unet'
+        model_id: Model identifier
+
+    Returns model info including parameter count and device.
+    """
+    try:
+        from api.services import get_ml_service
+
+        service = get_ml_service()
+
+        result = service.get_model_info(model_id=model_id, model_type=model_type)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get model info: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)

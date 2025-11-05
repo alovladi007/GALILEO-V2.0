@@ -9,6 +9,7 @@ from .inversion_service import InversionService, get_inversion_service
 from .control_service import ControlService, get_control_service
 from .emulator_service import EmulatorService, get_emulator_service
 from .calibration_service import CalibrationService, get_calibration_service
+from .ml_service import MLService, get_ml_service
 
 __all__ = [
     'SimulationService',
@@ -21,4 +22,6 @@ __all__ = [
     'get_emulator_service',
     'CalibrationService',
     'get_calibration_service',
+    'MLService',
+    'get_ml_service',
 ]
