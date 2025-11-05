@@ -1,0 +1,21 @@
+# Benchmark Suite - Minimal Dependencies
+# Lightweight requirements for running benchmarks in CI
+
+# Core numerical computing (required for bench/)
+numpy>=1.24.0,<2.0.0
+scipy>=1.11.1
+
+# Data handling (required for datasets)
+pandas==2.0.0
+h5py==3.9.0
+
+# Visualization (required for metrics)
+matplotlib==3.7.0
+
+# Testing tools
+pytest==7.4.0
+pytest-cov==4.1.0
+pytest-benchmark==4.0.0
+
+# Configuration
+pyyaml==6.0

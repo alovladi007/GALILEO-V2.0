@@ -38,8 +38,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-benchmark
+          pip install -r requirements-bench.txt
+          echo "✅ Benchmark dependencies installed successfully"
       
       - name: Generate test datasets
         run: |
@@ -172,8 +172,8 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
+          pip install -r requirements-bench.txt
+          echo "✅ Test dependencies installed successfully"
       
       - name: Run integration tests
         run: |
@@ -202,7 +202,8 @@ jobs:
       
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-bench.txt
+          echo "✅ Regression test dependencies installed successfully"
       
       - name: Run benchmarks on PR
         run: |
