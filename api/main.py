@@ -709,6 +709,244 @@ async def list_controllers():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Controller listing failed: {str(e)}")
 
+# ============================================================================
+# Emulator Endpoints
+# ============================================================================
+
+class EmulatorCreateRequest(BaseModel):
+    """Request for creating optical bench emulator."""
+    emulator_id: str = 'default'
+    baseline_length: float = 1.0
+    wavelength: float = 632.8e-9
+    sampling_rate: float = 1000.0
+    temperature: float = 293.15
+    shot_noise_level: float = 0.01
+    vibration_amplitude: float = 1e-9
+    phase_stability: float = 0.1
+
+class EmulatorEventRequest(BaseModel):
+    """Request for injecting emulator event."""
+    emulator_id: str = 'default'
+    event_type: str  # 'vibration_spike', 'thermal_jump'
+    magnitude: Optional[float] = None
+    delta_temp: Optional[float] = None
+
+@app.post("/api/emulator/create")
+async def create_emulator_instance(request: EmulatorCreateRequest):
+    """
+    Create optical bench emulator instance.
+
+    Returns emulator configuration and ID.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Emulator modules not available")
+
+    try:
+        from api.services import get_emulator_service
+
+        service = get_emulator_service()
+
+        result = service.create_emulator(
+            emulator_id=request.emulator_id,
+            baseline_length=request.baseline_length,
+            wavelength=request.wavelength,
+            sampling_rate=request.sampling_rate,
+            temperature=request.temperature,
+            shot_noise_level=request.shot_noise_level,
+            vibration_amplitude=request.vibration_amplitude,
+            phase_stability=request.phase_stability
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Emulator creation failed: {str(e)}")
+
+@app.get("/api/emulator/{emulator_id}/status")
+async def get_emulator_status(emulator_id: str = 'default'):
+    """
+    Get emulator operational status.
+
+    Returns current state and configuration.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Emulator modules not available")
+
+    try:
+        from api.services import get_emulator_service
+
+        service = get_emulator_service()
+
+        result = service.get_emulator_status(emulator_id)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Status retrieval failed: {str(e)}")
+
+@app.post("/api/emulator/{emulator_id}/start")
+async def start_emulator(emulator_id: str = 'default'):
+    """
+    Start emulator data generation.
+
+    Returns start confirmation.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Emulator modules not available")
+
+    try:
+        from api.services import get_emulator_service
+
+        service = get_emulator_service()
+
+        result = service.start_emulator(emulator_id)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Emulator start failed: {str(e)}")
+
+@app.post("/api/emulator/{emulator_id}/stop")
+async def stop_emulator(emulator_id: str = 'default'):
+    """
+    Stop emulator data generation.
+
+    Returns stop confirmation.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Emulator modules not available")
+
+    try:
+        from api.services import get_emulator_service
+
+        service = get_emulator_service()
+
+        result = service.stop_emulator(emulator_id)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Emulator stop failed: {str(e)}")
+
+@app.get("/api/emulator/{emulator_id}/state")
+async def get_current_state(emulator_id: str = 'default'):
+    """
+    Get current emulator state snapshot.
+
+    Returns all current signal values.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Emulator modules not available")
+
+    try:
+        from api.services import get_emulator_service
+
+        service = get_emulator_service()
+
+        state = service.get_current_state(emulator_id)
+
+        return state.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"State retrieval failed: {str(e)}")
+
+@app.get("/api/emulator/{emulator_id}/history")
+async def get_signal_history(
+    emulator_id: str = 'default',
+    duration: float = 1.0,
+    signal_type: str = 'interference'
+):
+    """
+    Get time series of emulator signals.
+
+    Returns historical signal data for specified duration.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Emulator modules not available")
+
+    try:
+        from api.services import get_emulator_service
+
+        service = get_emulator_service()
+
+        result = service.get_signal_history(emulator_id, duration, signal_type)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"History retrieval failed: {str(e)}")
+
+@app.post("/api/emulator/{emulator_id}/inject-event")
+async def inject_emulator_event(emulator_id: str, request: EmulatorEventRequest):
+    """
+    Inject anomaly or event into emulator.
+
+    Simulates environmental disturbances or equipment anomalies.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Emulator modules not available")
+
+    try:
+        from api.services import get_emulator_service
+
+        service = get_emulator_service()
+
+        if request.event_type == 'vibration_spike':
+            magnitude = request.magnitude or 10.0
+            result = service.inject_vibration_spike(emulator_id, magnitude)
+        elif request.event_type == 'thermal_jump':
+            delta_temp = request.delta_temp or 1.0
+            result = service.inject_thermal_jump(emulator_id, delta_temp)
+        else:
+            raise ValueError(f"Unknown event type: {request.event_type}")
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Event injection failed: {str(e)}")
+
+@app.post("/api/emulator/{emulator_id}/reset")
+async def reset_emulator(emulator_id: str = 'default'):
+    """
+    Reset emulator to initial state.
+
+    Clears all accumulated drift and resets counters.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Emulator modules not available")
+
+    try:
+        from api.services import get_emulator_service
+
+        service = get_emulator_service()
+
+        result = service.reset_emulator(emulator_id)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Emulator reset failed: {str(e)}")
+
+@app.get("/api/emulator/list")
+async def list_emulators():
+    """
+    List all active emulator instances.
+
+    Returns IDs of all created emulators.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Emulator modules not available")
+
+    try:
+        from api.services import get_emulator_service
+
+        service = get_emulator_service()
+
+        return service.list_emulators()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Emulator listing failed: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)
