@@ -2118,6 +2118,306 @@ async def get_workflow_outputs(workflow_id: str):
         raise HTTPException(status_code=500, detail=f"Output retrieval failed: {str(e)}")
 
 
+# =================================================================
+# Database Persistence Endpoints
+# =================================================================
+
+@app.post("/api/db/users")
+async def create_user(request: dict):
+    """Create user. Body: {"username": "...", "email": "...", "hashed_password": "..."}"""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        return service.create_user(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"User creation failed: {str(e)}")
+
+
+@app.get("/api/db/users/{username}")
+async def get_user(username: str):
+    """Get user by username."""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        user = service.get_user_by_username(username)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"User retrieval failed: {str(e)}")
+
+
+@app.get("/api/db/users")
+async def list_users(active_only: bool = True, limit: int = 100):
+    """List all users."""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        return service.list_users(active_only=active_only, limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"User listing failed: {str(e)}")
+
+
+@app.post("/api/db/jobs")
+async def create_job(request: dict):
+    """Create processing job. Body: {"job_type": "...", "user_id": "...", "config": {...}}"""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        return service.create_job(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Job creation failed: {str(e)}")
+
+
+@app.put("/api/db/jobs/{job_id}/status")
+async def update_job_status(job_id: str, request: dict):
+    """Update job status. Body: {"status": "...", "result": {...}, "error_message": "..."}"""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        return service.update_job_status(job_id=job_id, **request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Job update failed: {str(e)}")
+
+
+@app.get("/api/db/jobs/{job_id}")
+async def get_job(job_id: str):
+    """Get job by ID."""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        job = service.get_job(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        return job
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Job retrieval failed: {str(e)}")
+
+
+@app.get("/api/db/jobs")
+async def list_jobs(
+    user_id: Optional[str] = None,
+    status: Optional[str] = None,
+    job_type: Optional[str] = None,
+    limit: int = 100
+):
+    """List processing jobs."""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        return service.list_jobs(user_id=user_id, status=status, job_type=job_type, limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Job listing failed: {str(e)}")
+
+
+@app.post("/api/db/observations")
+async def create_observation(request: dict):
+    """Create satellite observation."""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        # Parse datetime if string
+        if 'time' in request and isinstance(request['time'], str):
+            from datetime import datetime
+            request['time'] = datetime.fromisoformat(request['time'].replace('Z', '+00:00'))
+        return service.create_observation(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Observation creation failed: {str(e)}")
+
+
+@app.post("/api/db/observations/bulk")
+async def bulk_create_observations(request: dict):
+    """Bulk create observations. Body: {"observations": [{...}, ...]}"""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        return service.bulk_create_observations(request.get('observations', []))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Bulk observation creation failed: {str(e)}")
+
+
+@app.get("/api/db/observations")
+async def query_observations(
+    satellite_id: Optional[str] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+    job_id: Optional[str] = None,
+    limit: int = 1000
+):
+    """Query satellite observations."""
+    try:
+        from api.services import get_database_service
+        from datetime import datetime
+        service = get_database_service()
+
+        # Parse datetime strings
+        start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00')) if start_time else None
+        end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00')) if end_time else None
+
+        return service.query_observations(
+            satellite_id=satellite_id,
+            start_time=start_dt,
+            end_time=end_dt,
+            job_id=job_id,
+            limit=limit
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Observation query failed: {str(e)}")
+
+
+@app.post("/api/db/products")
+async def create_product(request: dict):
+    """Create gravity product."""
+    try:
+        from api.services import get_database_service
+        from datetime import datetime
+        service = get_database_service()
+
+        # Parse datetime strings
+        if 'time_start' in request and isinstance(request['time_start'], str):
+            request['time_start'] = datetime.fromisoformat(request['time_start'].replace('Z', '+00:00'))
+        if 'time_end' in request and isinstance(request['time_end'], str):
+            request['time_end'] = datetime.fromisoformat(request['time_end'].replace('Z', '+00:00'))
+
+        return service.create_product(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Product creation failed: {str(e)}")
+
+
+@app.get("/api/db/products")
+async def query_products(
+    product_type: Optional[str] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+    job_id: Optional[str] = None,
+    limit: int = 100
+):
+    """Query gravity products."""
+    try:
+        from api.services import get_database_service
+        from datetime import datetime
+        service = get_database_service()
+
+        # Parse datetime strings
+        start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00')) if start_time else None
+        end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00')) if end_time else None
+
+        return service.query_products(
+            product_type=product_type,
+            start_time=start_dt,
+            end_time=end_dt,
+            job_id=job_id,
+            limit=limit
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Product query failed: {str(e)}")
+
+
+@app.post("/api/db/baselines")
+async def create_baseline_vector(request: dict):
+    """Create baseline vector."""
+    try:
+        from api.services import get_database_service
+        from datetime import datetime
+        service = get_database_service()
+
+        # Parse datetime if string
+        if 'time' in request and isinstance(request['time'], str):
+            request['time'] = datetime.fromisoformat(request['time'].replace('Z', '+00:00'))
+
+        return service.create_baseline_vector(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Baseline vector creation failed: {str(e)}")
+
+
+@app.post("/api/db/baselines/bulk")
+async def bulk_create_baseline_vectors(request: dict):
+    """Bulk create baseline vectors. Body: {"baseline_vectors": [{...}, ...]}"""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        return service.bulk_create_baseline_vectors(request.get('baseline_vectors', []))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Bulk baseline vector creation failed: {str(e)}")
+
+
+@app.get("/api/db/baselines")
+async def query_baseline_vectors(
+    satellite_1: Optional[str] = None,
+    satellite_2: Optional[str] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+    job_id: Optional[str] = None,
+    limit: int = 1000
+):
+    """Query baseline vectors."""
+    try:
+        from api.services import get_database_service
+        from datetime import datetime
+        service = get_database_service()
+
+        # Parse datetime strings
+        start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00')) if start_time else None
+        end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00')) if end_time else None
+
+        return service.query_baseline_vectors(
+            satellite_1=satellite_1,
+            satellite_2=satellite_2,
+            start_time=start_dt,
+            end_time=end_dt,
+            job_id=job_id,
+            limit=limit
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Baseline vector query failed: {str(e)}")
+
+
+@app.post("/api/db/audit-logs")
+async def create_audit_log(request: dict):
+    """Create audit log entry."""
+    try:
+        from api.services import get_database_service
+        service = get_database_service()
+        return service.create_audit_log(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Audit log creation failed: {str(e)}")
+
+
+@app.get("/api/db/audit-logs")
+async def query_audit_logs(
+    user_id: Optional[str] = None,
+    action: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+    limit: int = 100
+):
+    """Query audit logs."""
+    try:
+        from api.services import get_database_service
+        from datetime import datetime
+        service = get_database_service()
+
+        # Parse datetime strings
+        start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00')) if start_time else None
+        end_dt = datetime.fromisoformat(end_time.replace('Z', '+00:00')) if end_time else None
+
+        return service.query_audit_logs(
+            user_id=user_id,
+            action=action,
+            resource_type=resource_type,
+            start_time=start_dt,
+            end_time=end_dt,
+            limit=limit
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Audit log query failed: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)
