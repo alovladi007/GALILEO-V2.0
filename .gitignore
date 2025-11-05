@@ -65,6 +65,14 @@ dmypy.json
 *.dat
 *.bin
 
+# ML model files
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.pkl
+*.pickle
+
 # Logs
 *.log
 logs/
