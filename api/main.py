@@ -135,32 +135,34 @@ async def propagate_orbit(request: PropagationRequest):
         raise HTTPException(status_code=503, detail="Simulation modules not available")
 
     try:
-        # Convert degrees to radians for angles
-        oe = jnp.array([
-            request.orbital_elements.semi_major_axis,
-            request.orbital_elements.eccentricity,
-            jnp.deg2rad(request.orbital_elements.inclination),
-            jnp.deg2rad(request.orbital_elements.raan),
-            jnp.deg2rad(request.orbital_elements.argument_of_perigee),
-            jnp.deg2rad(request.orbital_elements.true_anomaly),
-        ])
+        # Use simulation service
+        from api.services import get_simulation_service
+        service = get_simulation_service()
 
-        # Convert to Cartesian state
-        state0 = orbital_elements_to_cartesian(oe)
+        # Prepare elements dict
+        elements = {
+            'semi_major_axis': request.orbital_elements.semi_major_axis,
+            'eccentricity': request.orbital_elements.eccentricity,
+            'inclination': request.orbital_elements.inclination,
+            'raan': request.orbital_elements.raan,
+            'argument_of_perigee': request.orbital_elements.argument_of_perigee,
+            'true_anomaly': request.orbital_elements.true_anomaly,
+        }
 
-        # Propagate
-        times, states = propagate_orbit_jax(
-            two_body_dynamics,
-            state0,
-            t_span=(0.0, request.duration),
-            dt=request.time_step
+        # Propagate orbit
+        result = service.propagate_from_elements(
+            elements,
+            duration=request.duration,
+            time_step=request.time_step,
+            include_perturbations=False
         )
 
+        # Add orbital parameters
+        params = service.compute_orbital_parameters(elements)
+
         return {
-            "times": times.tolist(),
-            "states": states.tolist(),
-            "num_points": len(times),
-            "duration": request.duration,
+            **result,
+            "orbital_parameters": params,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Propagation failed: {str(e)}")
@@ -176,21 +178,33 @@ async def propagate_formation(request: FormationRequest):
         raise HTTPException(status_code=503, detail="Simulation modules not available")
 
     try:
-        delta_state = jnp.array(request.delta_state)
+        # Use simulation service
+        from api.services import get_simulation_service
+        service = get_simulation_service()
 
-        times, rel_states = propagate_relative_orbit(
+        # For now, use simple formation propagation
+        # TODO: Support full chief/deputy simulation from request
+        delta_state = request.delta_state
+
+        # Create a basic LEO orbit for chief if not provided
+        chief_elements = {
+            'semi_major_axis': 6900.0,  # 500 km altitude LEO
+            'eccentricity': 0.001,
+            'inclination': 98.0,  # Sun-synchronous
+            'raan': 0.0,
+            'argument_of_perigee': 0.0,
+            'true_anomaly': 0.0,
+        }
+
+        # Simulate formation
+        result = service.simulate_formation(
+            chief_elements,
             delta_state,
-            request.mean_motion,
-            t_span=(0.0, request.duration),
-            dt=request.time_step
+            duration=request.duration,
+            time_step=request.time_step
         )
 
-        return {
-            "times": times.tolist(),
-            "states": rel_states.tolist(),
-            "num_points": len(times),
-            "duration": request.duration,
-        }
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Formation simulation failed: {str(e)}")
 
