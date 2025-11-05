@@ -1,0 +1,1 @@
+Test file to verify public assets are served correctly
