@@ -72,7 +72,7 @@ class SatelliteObservation(Base):
     altitude = Column(Float, nullable=False)
     gravity_value = Column(Float)
     gravity_uncertainty = Column(Float)
-    metadata = Column(JSONB)
+    meta_info = Column(JSONB)
     job_id = Column(UUID(as_uuid=True), ForeignKey("processing_jobs.id", ondelete="CASCADE"))
     
     # Relationships
@@ -89,7 +89,7 @@ class GravityProduct(Base):
     degree_max = Column(Integer)
     spatial_resolution = Column(Float)
     s3_path = Column(Text, nullable=False)
-    metadata = Column(JSONB)
+    meta_info = Column(JSONB)
     job_id = Column(UUID(as_uuid=True), ForeignKey("processing_jobs.id", ondelete="CASCADE"))
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     
@@ -105,7 +105,7 @@ class BaselineVector(Base):
     range_rate = Column(Float)
     range_acceleration = Column(Float)
     baseline_length = Column(Float)
-    metadata = Column(JSONB)
+    meta_info = Column(JSONB)
     job_id = Column(UUID(as_uuid=True), ForeignKey("processing_jobs.id", ondelete="CASCADE"))
     
     # Relationships

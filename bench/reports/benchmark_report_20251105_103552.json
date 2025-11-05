@@ -1,0 +1,56 @@
+[
+  {
+    "name": "Forward Modeling",
+    "suite": "performance",
+    "status": "PASS",
+    "metrics": {
+      "runtime_ms": 12.096665999999923,
+      "throughput_cells_per_sec": 21670764.489984404,
+      "speedup": 8.266740604394686
+    },
+    "runtime": 0.01341390609741211,
+    "timestamp": "2025-11-05T10:35:48.627536",
+    "error": null
+  },
+  {
+    "name": "Inversion Speed",
+    "suite": "performance",
+    "status": "FAIL",
+    "metrics": {
+      "runtime_ms": 177.25479099999995,
+      "iterations": 20,
+      "ms_per_iteration": 8.862739549999997,
+      "speedup": 5.641596451968399
+    },
+    "runtime": 0.17871499061584473,
+    "timestamp": "2025-11-05T10:35:48.806283",
+    "error": null
+  },
+  {
+    "name": "ML Inference",
+    "suite": "performance",
+    "status": "PASS",
+    "metrics": {
+      "runtime_ms": 2.311750000000057,
+      "samples_per_second": 13842.327241267098,
+      "latency_ms": 0.07224218750000178,
+      "speedup": 692.1163620633549
+    },
+    "runtime": 0.0045397281646728516,
+    "timestamp": "2025-11-05T10:35:48.810855",
+    "error": null
+  },
+  {
+    "name": "Memory Efficiency",
+    "suite": "performance",
+    "status": "PASS",
+    "metrics": {
+      "peak_memory_mb": 2352.796875,
+      "average_memory_mb": 1284.2265625,
+      "memory_efficiency": 0.09165952755696345
+    },
+    "runtime": 3.9455831050872803,
+    "timestamp": "2025-11-05T10:35:52.756464",
+    "error": null
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "name": "PSF Characterization",
+    "suite": "spatial",
+    "status": "WARN",
+    "metrics": {
+      "psf_error": 0.041143190827114234,
+      "psf_width": 11.0,
+      "resolution_km": 4.680851063829787
+    },
+    "runtime": 0.0037660598754882812,
+    "timestamp": "2025-11-05T10:32:12.396706",
+    "error": null
+  },
+  {
+    "name": "Frequency Response",
+    "suite": "spatial",
+    "status": "FAIL",
+    "metrics": {
+      "frequency_response": 0.0,
+      "nyquist_response": 0.0,
+      "effective_resolution_km": 999.0
+    },
+    "runtime": 0.009036064147949219,
+    "timestamp": "2025-11-05T10:32:12.405764",
+    "error": null
+  },
+  {
+    "name": "Resolution Recovery",
+    "suite": "spatial",
+    "status": "FAIL",
+    "metrics": {},
+    "runtime": 0.004912137985229492,
+    "timestamp": "2025-11-05T10:32:12.410693",
+    "error": "all the input array dimensions except for the concatenation axis must match exactly, but along dimension 1, the array at index 0 has size 16384 and the array at index 1 has size 32768"
+  },
+  {
+    "name": "Anomaly Separation",
+    "suite": "spatial",
+    "status": "PASS",
+    "metrics": {
+      "separation_rmse": 0.2532857678651401,
+      "cross_talk_db": 3.661295475769512,
+      "separation_quality": 0.7979026217647156
+    },
+    "runtime": 0.003626108169555664,
+    "timestamp": "2025-11-05T10:32:12.414336",
+    "error": null
+  }
+]
