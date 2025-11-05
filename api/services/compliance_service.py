@@ -394,10 +394,12 @@ class ComplianceService:
         if not COMPLIANCE_IMPORTS_AVAILABLE:
             raise RuntimeError("Compliance modules not available")
 
-        secrets = self.secrets_manager.list_secrets(include_expired=include_expired)
+        # SecretsManager.list_secrets() doesn't accept include_expired parameter
+        # It already returns dictionaries, not Secret objects
+        secrets = self.secrets_manager.list_secrets()
 
         return {
-            'secrets': [s.to_dict(include_value=False) for s in secrets],
+            'secrets': secrets,
             'count': len(secrets)
         }
 
@@ -531,7 +533,9 @@ class ComplianceService:
         if not COMPLIANCE_IMPORTS_AVAILABLE:
             raise RuntimeError("Compliance modules not available")
 
-        policies = self.retention_manager.list_policies()
+        # DataRetentionManager doesn't have list_policies method
+        # Access internal policies dictionary directly
+        policies = list(self.retention_manager.policies.values())
 
         return {
             'policies': [p.to_dict() for p in policies],
@@ -543,7 +547,14 @@ class ComplianceService:
         if not COMPLIANCE_IMPORTS_AVAILABLE:
             raise RuntimeError("Compliance modules not available")
 
-        holds = self.retention_manager.list_holds(active_only=active_only)
+        # DataRetentionManager doesn't have list_holds method
+        # Access internal legal_holds dictionary and filter if needed
+        all_holds = list(self.retention_manager.legal_holds.values())
+
+        if active_only:
+            holds = [h for h in all_holds if h.is_active()]
+        else:
+            holds = all_holds
 
         return {
             'holds': [h.to_dict() for h in holds],
