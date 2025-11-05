@@ -476,6 +476,239 @@ async def run_joint_inversion(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Joint inversion failed: {str(e)}")
 
+# ============================================================================
+# Control/GNC Endpoints
+# ============================================================================
+
+class LQRControllerRequest(BaseModel):
+    """Request for creating LQR controller."""
+    mean_motion: float
+    position_weight: float = 10.0
+    velocity_weight: float = 1.0
+    control_weight: float = 0.01
+    discrete: bool = False
+    dt: Optional[float] = None
+    controller_id: str = 'default'
+
+class ControlComputeRequest(BaseModel):
+    """Request for computing control action."""
+    controller_id: str
+    current_state: List[float]  # [x, y, z, vx, vy, vz]
+    reference_state: Optional[List[float]] = None
+
+class EKFCreateRequest(BaseModel):
+    """Request for creating Extended Kalman Filter."""
+    mu: float = 398600.4418
+    process_noise_std: float = 1e-6
+    gps_noise_std: float = 0.01
+    dt: float = 1.0
+    ekf_id: str = 'default_ekf'
+
+class EKFStepRequest(BaseModel):
+    """Request for EKF update step."""
+    ekf_id: str
+    state: List[float]  # [x, y, z, vx, vy, vz]
+    covariance: List[List[float]]  # 6x6 matrix
+    measurement: List[float]  # GPS measurement [x, y, z]
+    control: Optional[List[float]] = None
+    time: float = 0.0
+
+@app.post("/api/control/lqr/create")
+async def create_lqr_controller(request: LQRControllerRequest):
+    """
+    Create LQR controller for formation flying.
+
+    Returns controller ID and gain matrix.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Control modules not available")
+
+    try:
+        from api.services import get_control_service
+
+        service = get_control_service()
+
+        # Create controller
+        result = service.create_lqr_controller(
+            mean_motion=request.mean_motion,
+            position_weight=request.position_weight,
+            velocity_weight=request.velocity_weight,
+            control_weight=request.control_weight,
+            discrete=request.discrete,
+            dt=request.dt,
+            controller_id=request.controller_id
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"LQR controller creation failed: {str(e)}")
+
+@app.post("/api/control/lqr/compute")
+async def compute_lqr_control(request: ControlComputeRequest):
+    """
+    Compute LQR control action for current state.
+
+    Returns control acceleration vector.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Control modules not available")
+
+    try:
+        from api.services import get_control_service
+        import numpy as np
+
+        service = get_control_service()
+
+        # Compute control
+        result = service.compute_lqr_control(
+            controller_id=request.controller_id,
+            current_state=np.array(request.current_state),
+            reference_state=np.array(request.reference_state) if request.reference_state else None
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"LQR control computation failed: {str(e)}")
+
+@app.post("/api/control/lqr/simulate")
+async def simulate_lqr_trajectory(
+    controller_id: str,
+    initial_state: List[float],
+    duration: float,
+    dt: float = 10.0
+):
+    """
+    Simulate closed-loop trajectory with LQR controller.
+
+    Returns complete trajectory with states and controls.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Control modules not available")
+
+    try:
+        from api.services import get_control_service
+        import numpy as np
+
+        service = get_control_service()
+
+        # Simulate
+        result = service.simulate_lqr_trajectory(
+            controller_id=controller_id,
+            initial_state=np.array(initial_state),
+            duration=duration,
+            dt=dt
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"LQR simulation failed: {str(e)}")
+
+@app.post("/api/control/ekf/create")
+async def create_ekf_filter(request: EKFCreateRequest):
+    """
+    Create Extended Kalman Filter for state estimation.
+
+    Returns filter ID and configuration.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Control modules not available")
+
+    try:
+        from api.services import get_control_service
+
+        service = get_control_service()
+
+        # Create EKF
+        result = service.create_orbital_ekf(
+            mu=request.mu,
+            process_noise_std=request.process_noise_std,
+            gps_noise_std=request.gps_noise_std,
+            dt=request.dt,
+            ekf_id=request.ekf_id
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"EKF creation failed: {str(e)}")
+
+@app.post("/api/control/ekf/step")
+async def ekf_update_step(request: EKFStepRequest):
+    """
+    Perform EKF prediction and update step.
+
+    Returns updated state estimate with uncertainties.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Control modules not available")
+
+    try:
+        from api.services import get_control_service
+        import numpy as np
+
+        service = get_control_service()
+
+        # EKF step
+        result = service.ekf_full_step(
+            ekf_id=request.ekf_id,
+            state=np.array(request.state),
+            covariance=np.array(request.covariance),
+            measurement=np.array(request.measurement),
+            control=np.array(request.control) if request.control else None,
+            time=request.time
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"EKF step failed: {str(e)}")
+
+@app.get("/api/control/hcw-matrices")
+async def get_hcw_matrices(mean_motion: float, dt: Optional[float] = None):
+    """
+    Get Hill-Clohessy-Wiltshire system matrices.
+
+    Returns A and B matrices for relative orbital motion.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Control modules not available")
+
+    try:
+        from api.services import get_control_service
+
+        service = get_control_service()
+
+        # Get matrices
+        result = service.compute_hcw_matrices(mean_motion, dt)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"HCW matrix computation failed: {str(e)}")
+
+@app.get("/api/control/controllers")
+async def list_controllers():
+    """
+    List all cached controllers and filters.
+
+    Returns IDs of LQR controllers, MPC controllers, and EKF filters.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Control modules not available")
+
+    try:
+        from api.services import get_control_service
+
+        service = get_control_service()
+
+        return service.list_controllers()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Controller listing failed: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)
