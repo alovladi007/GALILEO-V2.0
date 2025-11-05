@@ -1827,6 +1827,183 @@ async def compare_designs(request: dict):
         raise HTTPException(status_code=500, detail=f"Design comparison failed: {str(e)}")
 
 
+# =============================================================================
+# COMPLIANCE ENDPOINTS - Security, Audit, RBAC, Secrets, Retention
+# =============================================================================
+
+@app.post("/api/compliance/audit/log")
+async def log_audit_event(request: dict):
+    """
+    Log audit event with cryptographic chaining.
+
+    Body: {
+        "event_type": "LOGIN", "action": "user_login", "result": "success",
+        "user_id": "user123", "resource": "/api/data", "severity": "info",
+        "metadata": {}, "ip_address": "192.168.1.1"
+    }
+    """
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.log_audit_event(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Audit logging failed: {str(e)}")
+
+
+@app.get("/api/compliance/audit/verify")
+async def verify_audit_chain():
+    """Verify integrity of audit log chain."""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.verify_audit_chain()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chain verification failed: {str(e)}")
+
+
+@app.post("/api/compliance/auth/check")
+async def check_permission(request: dict):
+    """Check user permission for resource. Body: {"user_id": "...", "permission": "DATA_READ", "resource": "..."}"""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.check_permission(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Permission check failed: {str(e)}")
+
+
+@app.post("/api/compliance/auth/policy")
+async def create_policy(request: dict):
+    """Create authorization policy. Body: {"name": "...", "description": "...", "permissions": [...]}"""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.create_policy(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Policy creation failed: {str(e)}")
+
+
+@app.post("/api/compliance/auth/assign-role")
+async def assign_role(request: dict):
+    """Assign role to user. Body: {"user_id": "...", "role": "..."}"""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.assign_role(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Role assignment failed: {str(e)}")
+
+
+@app.get("/api/compliance/auth/policies")
+async def list_policies():
+    """List all authorization policies."""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.list_policies()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Policy listing failed: {str(e)}")
+
+
+@app.post("/api/compliance/secrets/store")
+async def store_secret(request: dict):
+    """Store encrypted secret. Body: {"name": "...", "value": "...", "secret_type": "API_KEY", "rotation_days": 90}"""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.store_secret(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Secret storage failed: {str(e)}")
+
+
+@app.post("/api/compliance/secrets/retrieve")
+async def retrieve_secret(request: dict):
+    """Retrieve secret. Body: {"secret_id": "...", "user_id": "..."}"""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.retrieve_secret(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Secret retrieval failed: {str(e)}")
+
+
+@app.post("/api/compliance/secrets/rotate")
+async def rotate_secret(request: dict):
+    """Rotate secret. Body: {"secret_id": "...", "new_value": "...", "user_id": "..."}"""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.rotate_secret(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Secret rotation failed: {str(e)}")
+
+
+@app.get("/api/compliance/secrets/list")
+async def list_secrets(include_expired: bool = False):
+    """List all secrets (metadata only)."""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.list_secrets(include_expired=include_expired)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Secret listing failed: {str(e)}")
+
+
+@app.post("/api/compliance/retention/policy")
+async def create_retention_policy(request: dict):
+    """Create retention policy. Body: {"name": "...", "retention_days": 365, "action": "DELETE", "classification": "CONFIDENTIAL"}"""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.create_retention_policy(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Retention policy creation failed: {str(e)}")
+
+
+@app.post("/api/compliance/retention/legal-hold")
+async def apply_legal_hold(request: dict):
+    """Apply legal hold. Body: {"name": "...", "case_number": "...", "custodian": "...", "resources": [...]}"""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.apply_legal_hold(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Legal hold application failed: {str(e)}")
+
+
+@app.post("/api/compliance/retention/release-hold")
+async def release_legal_hold(request: dict):
+    """Release legal hold. Body: {"hold_id": "...", "user_id": "..."}"""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.release_legal_hold(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Hold release failed: {str(e)}")
+
+
+@app.get("/api/compliance/retention/policies")
+async def list_retention_policies():
+    """List all retention policies."""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.list_retention_policies()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Policy listing failed: {str(e)}")
+
+
+@app.get("/api/compliance/retention/legal-holds")
+async def list_legal_holds(active_only: bool = True):
+    """List legal holds."""
+    try:
+        from api.services import get_compliance_service
+        service = get_compliance_service()
+        return service.list_legal_holds(active_only=active_only)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Hold listing failed: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)
