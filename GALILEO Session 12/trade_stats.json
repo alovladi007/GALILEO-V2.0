@@ -1,0 +1,22 @@
+{
+  "baseline": {
+    "optimal_length": 1000.0,
+    "max_sensitivity": 890.8664211279166,
+    "min_resolution": 2062.65
+  },
+  "orbit": {
+    "best_revisit_altitude": 400.0,
+    "max_coverage_altitude": 1500.0,
+    "recommended_altitude": 650.0
+  },
+  "optical": {
+    "max_datarate": 213.7661472329285,
+    "optimal_power": 100.0,
+    "optimal_aperture": 2.0
+  },
+  "pareto": {
+    "n_pareto_optimal": 39,
+    "total_designs": 1000,
+    "pareto_efficiency": 3.9
+  }
+}
