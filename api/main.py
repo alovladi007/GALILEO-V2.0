@@ -1249,9 +1249,10 @@ async def pinn_inference(request: dict):
 
         service = get_ml_service()
 
-        model_id = request['model_id']
-        coordinates = np.array(request['coordinates'])
-        densities = np.array(request['densities'])
+        # Use default model_id if not provided
+        model_id = request.get('model_id', 'default_pinn')
+        coordinates = np.array(request.get('coordinates', [[0.0, 0.0, 0.0]]))
+        densities = np.array(request.get('densities', [0.0]))
 
         result = service.pinn_inference(
             model_id=model_id,
@@ -1381,8 +1382,9 @@ async def unet_inference(request: dict):
 
         service = get_ml_service()
 
-        model_id = request['model_id']
-        phase_data = np.array(request['phase_data'])
+        # Use default model_id if not provided
+        model_id = request.get('model_id', 'default_unet')
+        phase_data = np.array(request.get('phase_data', [[0.0]]))
 
         result = service.unet_inference(
             model_id=model_id,
