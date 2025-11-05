@@ -2418,6 +2418,158 @@ async def query_audit_logs(
         raise HTTPException(status_code=500, detail=f"Audit log query failed: {str(e)}")
 
 
+# =================================================================
+# Background Task Processing Endpoints
+# =================================================================
+
+@app.post("/api/tasks/submit")
+async def submit_task(request: dict):
+    """
+    Submit task for async execution.
+
+    Body: {
+        "task_name": "simulation.propagate_formation",
+        "parameters": {...},
+        "priority": 5,
+        "countdown": 0
+    }
+    """
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.submit_task(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Task submission failed: {str(e)}")
+
+
+@app.post("/api/tasks/submit-chain")
+async def submit_task_chain(request: dict):
+    """
+    Submit task chain for sequential execution.
+
+    Body: {
+        "tasks": [
+            {"task_name": "...", "parameters": {...}},
+            {"task_name": "...", "parameters": {...}}
+        ]
+    }
+    """
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.submit_chain(request.get('tasks', []))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Task chain submission failed: {str(e)}")
+
+
+@app.post("/api/tasks/submit-group")
+async def submit_task_group(request: dict):
+    """
+    Submit task group for parallel execution.
+
+    Body: {
+        "tasks": [
+            {"task_name": "...", "parameters": {...}},
+            {"task_name": "...", "parameters": {...}}
+        ]
+    }
+    """
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.submit_group(request.get('tasks', []))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Task group submission failed: {str(e)}")
+
+
+@app.get("/api/tasks/{task_id}/status")
+async def get_task_status(task_id: str):
+    """Get task execution status."""
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.get_task_status(task_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Task status retrieval failed: {str(e)}")
+
+
+@app.get("/api/tasks/{task_id}/result")
+async def get_task_result(task_id: str, timeout: Optional[float] = None):
+    """Get task result (blocks until complete)."""
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.get_task_result(task_id, timeout=timeout)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Task result retrieval failed: {str(e)}")
+
+
+@app.get("/api/tasks/active")
+async def list_active_tasks():
+    """List all active tasks."""
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.list_active_tasks()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Active task listing failed: {str(e)}")
+
+
+@app.get("/api/tasks/scheduled")
+async def list_scheduled_tasks():
+    """List scheduled tasks."""
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.list_scheduled_tasks()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Scheduled task listing failed: {str(e)}")
+
+
+@app.post("/api/tasks/{task_id}/cancel")
+async def cancel_task(task_id: str, terminate: bool = False):
+    """Cancel running task."""
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.cancel_task(task_id, terminate=terminate)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Task cancellation failed: {str(e)}")
+
+
+@app.post("/api/tasks/{task_id}/retry")
+async def retry_task(task_id: str):
+    """Retry failed task."""
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.retry_task(task_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Task retry failed: {str(e)}")
+
+
+@app.get("/api/tasks/workers/stats")
+async def get_worker_stats():
+    """Get Celery worker statistics."""
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.get_worker_stats()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Worker stats retrieval failed: {str(e)}")
+
+
+@app.get("/api/tasks/workers/ping")
+async def ping_workers():
+    """Ping Celery workers."""
+    try:
+        from api.services import get_task_service
+        service = get_task_service()
+        return service.ping_workers()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Worker ping failed: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)
