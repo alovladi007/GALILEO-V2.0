@@ -253,6 +253,229 @@ async def calculate_noise_budget(request: NoiseRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Noise calculation failed: {str(e)}")
 
+# ============================================================================
+# Inversion Endpoints
+# ============================================================================
+
+class TikhonovInversionRequest(BaseModel):
+    """Request for Tikhonov regularized inversion."""
+    forward_matrix: List[List[float]]  # n_data x n_model
+    data: List[float]  # n_data
+    lambda_reg: float
+    regularization_type: str = 'smoothness'  # 'smoothness' or 'identity'
+    regularization_order: int = 2
+
+class LCurveRequest(BaseModel):
+    """Request for L-curve analysis."""
+    forward_matrix: List[List[float]]
+    data: List[float]
+    lambda_range: Optional[List[float]] = None
+
+class GravityAnomalyRequest(BaseModel):
+    """Request for gravity anomaly computation."""
+    latitude: List[float]
+    longitude: List[float]
+    observed_gravity: List[float]  # mGal
+    model_name: str = 'EGM96'
+    correction_type: str = 'free_air'  # 'free_air', 'bouguer', 'isostatic'
+    elevation: Optional[List[float]] = None  # meters
+
+class JointInversionSetupRequest(BaseModel):
+    """Request for joint inversion setup."""
+    gravity_data: List[float]
+    latitude: List[float]
+    longitude: List[float]
+    depth: Optional[List[float]] = None
+    model_name: str = 'joint_model'
+
+@app.post("/api/inversion/tikhonov")
+async def solve_tikhonov_inversion(request: TikhonovInversionRequest):
+    """
+    Solve linear inverse problem using Tikhonov regularization.
+
+    Returns model estimate with resolution diagnostics.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Inversion modules not available")
+
+    try:
+        from api.services import get_inversion_service
+        import numpy as np
+
+        service = get_inversion_service()
+
+        # Convert to numpy arrays
+        forward_matrix = np.array(request.forward_matrix)
+        data = np.array(request.data)
+
+        # Solve inversion
+        result = service.solve_tikhonov(
+            forward_matrix,
+            data,
+            request.lambda_reg,
+            regularization_type=request.regularization_type,
+            regularization_order=request.regularization_order
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Tikhonov inversion failed: {str(e)}")
+
+@app.post("/api/inversion/l-curve")
+async def compute_l_curve(request: LCurveRequest):
+    """
+    Compute L-curve for regularization parameter selection.
+
+    Returns optimal lambda and curve data for visualization.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Inversion modules not available")
+
+    try:
+        from api.services import get_inversion_service
+        import numpy as np
+
+        service = get_inversion_service()
+
+        # Convert to numpy arrays
+        forward_matrix = np.array(request.forward_matrix)
+        data = np.array(request.data)
+        lambda_range = np.array(request.lambda_range) if request.lambda_range else None
+
+        # Compute L-curve
+        result = service.compute_l_curve(forward_matrix, data, lambda_range)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"L-curve computation failed: {str(e)}")
+
+@app.get("/api/inversion/gravity-model/{model_name}")
+async def load_gravity_model(model_name: str):
+    """
+    Load reference gravity field model (EGM96 or EGM2008).
+
+    Returns model metadata and specifications.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Inversion modules not available")
+
+    try:
+        from api.services import get_inversion_service
+
+        service = get_inversion_service()
+
+        # Load model
+        result = service.load_gravity_model(model_name)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gravity model loading failed: {str(e)}")
+
+@app.post("/api/inversion/gravity-anomaly")
+async def compute_gravity_anomaly(request: GravityAnomalyRequest):
+    """
+    Compute gravity anomaly relative to reference model.
+
+    Supports free-air, Bouguer, and isostatic corrections.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Inversion modules not available")
+
+    try:
+        from api.services import get_inversion_service
+        import numpy as np
+
+        service = get_inversion_service()
+
+        # Convert to numpy arrays
+        lat = np.array(request.latitude)
+        lon = np.array(request.longitude)
+        observed_gravity = np.array(request.observed_gravity)
+        elevation = np.array(request.elevation) if request.elevation else None
+
+        # Compute anomaly
+        result = service.compute_gravity_anomaly(
+            lat, lon, observed_gravity,
+            model_name=request.model_name,
+            correction_type=request.correction_type,
+            elevation=elevation
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Gravity anomaly computation failed: {str(e)}")
+
+@app.post("/api/inversion/joint/setup")
+async def setup_joint_inversion(request: JointInversionSetupRequest):
+    """
+    Set up joint inversion model with gravity data.
+
+    Returns model ID for subsequent operations.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Inversion modules not available")
+
+    try:
+        from api.services import get_inversion_service
+        import numpy as np
+
+        service = get_inversion_service()
+
+        # Convert to numpy arrays
+        gravity_data = np.array(request.gravity_data)
+        lat = np.array(request.latitude)
+        lon = np.array(request.longitude)
+        depth = np.array(request.depth) if request.depth else None
+
+        # Setup joint inversion
+        model_id = service.setup_joint_inversion_model(
+            gravity_data, lat, lon, depth, request.model_name
+        )
+
+        return {
+            "model_id": model_id,
+            "status": "configured",
+            "data_types": ["gravity"]
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Joint inversion setup failed: {str(e)}")
+
+@app.post("/api/inversion/joint/{model_id}/run")
+async def run_joint_inversion(
+    model_id: str,
+    max_iterations: int = 100,
+    convergence_tol: float = 1e-6
+):
+    """
+    Execute joint inversion for configured model.
+
+    Returns inversion results including model, residuals, and convergence info.
+    """
+    if not IMPORTS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Inversion modules not available")
+
+    try:
+        from api.services import get_inversion_service
+
+        service = get_inversion_service()
+
+        # Run inversion
+        results = service.run_joint_inversion(
+            model_id,
+            max_iterations=max_iterations,
+            convergence_tol=convergence_tol
+        )
+
+        return results
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Joint inversion failed: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)
