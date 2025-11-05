@@ -23,9 +23,10 @@ try:
     import jax.numpy as jnp
     from sensing.allan import allan_deviation, overlapping_allan_deviation, modified_allan_deviation
     from sensing.phase_model import compute_phase, compute_phase_rate, range_to_phase
-    from sensing.noise import total_phase_noise_std, shot_noise, frequency_noise
+    from sensing.noise import total_phase_noise_std, shot_noise_std, laser_frequency_noise_std
     SENSING_IMPORTS_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"Sensing imports not available: {e}")
     SENSING_IMPORTS_AVAILABLE = False
 
 
@@ -51,6 +52,17 @@ class CalibrationService:
         """Initialize calibration service."""
         if not SENSING_IMPORTS_AVAILABLE:
             print("Warning: Sensing modules not available.")
+        else:
+            # Warm up JAX to avoid 5+ second delay on first call
+            import jax.numpy as jnp
+            try:
+                # Trigger JAX compilation with simple operations
+                _ = jnp.array([1.0, 2.0, 3.0])
+                _ = jnp.logspace(0, 1, 10)
+                _ = jnp.mean(_)
+                print("✓ JAX initialized and warmed up for calibration service")
+            except Exception as e:
+                print(f"Warning: JAX warm-up failed: {e}")
 
     # =================================================================
     # Allan Deviation Analysis
