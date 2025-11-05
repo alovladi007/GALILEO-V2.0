@@ -1619,6 +1619,214 @@ async def get_model_info(model_type: str, model_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to get model info: {str(e)}")
 
 
+# =============================================================================
+# TRADE STUDY ENDPOINTS - Mission Design Trade Studies
+# =============================================================================
+
+@app.post("/api/trades/baseline")
+async def run_baseline_trade_study(request: dict):
+    """
+    Run baseline length vs noise vs sensitivity trade study.
+
+    Body:
+    {
+        "baseline_min": 10.0,  # meters
+        "baseline_max": 1000.0,
+        "n_points": 50,
+        "wavelength": 1e-5,  # 10 microns
+        "integration_time": 3600.0  # seconds
+    }
+
+    Returns resolution, noise, and sensitivity trade data.
+    """
+    try:
+        from api.services import get_trade_study_service
+
+        service = get_trade_study_service()
+
+        result = service.run_baseline_study(
+            baseline_min=request.get('baseline_min', 10.0),
+            baseline_max=request.get('baseline_max', 1000.0),
+            n_points=request.get('n_points', 50),
+            wavelength=request.get('wavelength', 10e-6),
+            integration_time=request.get('integration_time', 3600.0)
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Baseline study failed: {str(e)}")
+
+
+@app.post("/api/trades/orbit")
+async def run_orbit_trade_study(request: dict):
+    """
+    Run orbit altitude and inclination vs coverage trade study.
+
+    Body:
+    {
+        "altitude_min": 400.0,  # km
+        "altitude_max": 1500.0,
+        "inclination_min": 0.0,  # degrees
+        "inclination_max": 98.0,
+        "n_points": 50
+    }
+
+    Returns swath width, revisit time, coverage area, power, and lifetime data.
+    """
+    try:
+        from api.services import get_trade_study_service
+
+        service = get_trade_study_service()
+
+        result = service.run_orbit_study(
+            altitude_min=request.get('altitude_min', 400.0),
+            altitude_max=request.get('altitude_max', 1500.0),
+            inclination_min=request.get('inclination_min', 0.0),
+            inclination_max=request.get('inclination_max', 98.0),
+            n_points=request.get('n_points', 50)
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Orbit study failed: {str(e)}")
+
+
+@app.post("/api/trades/optical")
+async def run_optical_trade_study(request: dict):
+    """
+    Run optical power and aperture trade study.
+
+    Body:
+    {
+        "power_min": 1.0,  # Watts
+        "power_max": 100.0,
+        "aperture_min": 0.1,  # meters
+        "aperture_max": 2.0,
+        "n_points": 50,
+        "wavelength": 1550e-9,  # meters
+        "distance": 40000e3  # meters (GEO)
+    }
+
+    Returns link budget, data rate, pointing accuracy, and mass data.
+    """
+    try:
+        from api.services import get_trade_study_service
+
+        service = get_trade_study_service()
+
+        result = service.run_optical_study(
+            power_min=request.get('power_min', 1.0),
+            power_max=request.get('power_max', 100.0),
+            aperture_min=request.get('aperture_min', 0.1),
+            aperture_max=request.get('aperture_max', 2.0),
+            n_points=request.get('n_points', 50),
+            wavelength=request.get('wavelength', 1550e-9),
+            distance=request.get('distance', 40000e3)
+        )
+
+        return result.to_dict()
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Optical study failed: {str(e)}")
+
+
+@app.post("/api/trades/pareto")
+async def find_pareto_front(request: dict):
+    """
+    Find Pareto front from multi-objective data.
+
+    Body:
+    {
+        "objectives": [[obj1_val1, obj2_val1], [obj1_val2, obj2_val2], ...],
+        "objectives_to_maximize": [true, false]  # true = maximize, false = minimize
+    }
+
+    Returns Pareto-optimal design indices and normalized objectives.
+    """
+    try:
+        from api.services import get_trade_study_service
+        import numpy as np
+
+        service = get_trade_study_service()
+
+        objectives = np.array(request['objectives'])
+        objectives_to_maximize = request['objectives_to_maximize']
+
+        result = service.find_pareto_front(objectives, objectives_to_maximize)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Pareto analysis failed: {str(e)}")
+
+
+@app.post("/api/trades/sensitivity")
+async def run_sensitivity_analysis(request: dict):
+    """
+    Perform sensitivity analysis by varying one parameter.
+
+    Body:
+    {
+        "study_type": "baseline",  # or "orbit", "optical"
+        "parameter_name": "wavelength",
+        "parameter_values": [1e-5, 2e-5, 3e-5],
+        "baseline_params": {"baseline_min": 10, "baseline_max": 1000, ...}
+    }
+
+    Returns results for each parameter value.
+    """
+    try:
+        from api.services import get_trade_study_service
+
+        service = get_trade_study_service()
+
+        result = service.sensitivity_analysis(
+            study_type=request['study_type'],
+            parameter_name=request['parameter_name'],
+            parameter_values=request['parameter_values'],
+            baseline_params=request['baseline_params']
+        )
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Sensitivity analysis failed: {str(e)}")
+
+
+@app.post("/api/trades/compare")
+async def compare_designs(request: dict):
+    """
+    Compare and rank design alternatives.
+
+    Body:
+    {
+        "designs": [
+            {"name": "Design A", "cost": 100, "performance": 0.8, ...},
+            {"name": "Design B", "cost": 150, "performance": 0.9, ...}
+        ],
+        "weights": {"cost": -1.0, "performance": 2.0}  # negative = minimize
+    }
+
+    Returns ranked designs with weighted scores.
+    """
+    try:
+        from api.services import get_trade_study_service
+
+        service = get_trade_study_service()
+
+        designs = request['designs']
+        weights = request.get('weights')
+
+        result = service.compare_designs(designs, weights)
+
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Design comparison failed: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)
