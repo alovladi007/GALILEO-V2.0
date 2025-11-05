@@ -12,6 +12,7 @@ from .calibration_service import CalibrationService, get_calibration_service
 from .ml_service import MLService, get_ml_service
 from .trade_study_service import TradeStudyService, get_trade_study_service
 from .compliance_service import ComplianceService, get_compliance_service
+from .workflow_service import WorkflowService, get_workflow_service
 
 __all__ = [
     'SimulationService',
@@ -30,4 +31,6 @@ __all__ = [
     'get_trade_study_service',
     'ComplianceService',
     'get_compliance_service',
+    'WorkflowService',
+    'get_workflow_service',
 ]

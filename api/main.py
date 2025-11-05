@@ -2004,6 +2004,120 @@ async def list_legal_holds(active_only: bool = True):
         raise HTTPException(status_code=500, detail=f"Hold listing failed: {str(e)}")
 
 
+# =================================================================
+# Workflow Orchestration Endpoints
+# =================================================================
+
+@app.get("/api/workflow/templates")
+async def list_workflow_templates():
+    """List all available workflow templates."""
+    try:
+        from api.services import get_workflow_service
+        service = get_workflow_service()
+        return service.list_workflow_templates()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Template listing failed: {str(e)}")
+
+
+@app.get("/api/workflow/templates/{workflow_type}")
+async def get_workflow_template(workflow_type: str):
+    """Get specific workflow template."""
+    try:
+        from api.services import get_workflow_service
+        service = get_workflow_service()
+        template = service.get_workflow_template(workflow_type)
+        if not template:
+            raise HTTPException(status_code=404, detail=f"Template not found: {workflow_type}")
+        return template
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Template retrieval failed: {str(e)}")
+
+
+@app.post("/api/workflow/submit")
+async def submit_workflow(request: dict):
+    """
+    Submit workflow for execution.
+
+    Body: {
+        "workflow_type": "full_mission",
+        "parameters": {...},
+        "user_id": "user123",
+        "priority": 5
+    }
+    """
+    try:
+        from api.services import get_workflow_service
+        service = get_workflow_service()
+        return service.submit_workflow(**request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Workflow submission failed: {str(e)}")
+
+
+@app.post("/api/workflow/{workflow_id}/execute")
+async def execute_workflow(workflow_id: str):
+    """
+    Execute workflow synchronously.
+
+    Note: For long-running workflows, use submit + status polling instead.
+    """
+    try:
+        from api.services import get_workflow_service
+        service = get_workflow_service()
+        return service.execute_workflow(workflow_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Workflow execution failed: {str(e)}")
+
+
+@app.get("/api/workflow/{workflow_id}/status")
+async def get_workflow_status(workflow_id: str):
+    """Get current workflow status."""
+    try:
+        from api.services import get_workflow_service
+        service = get_workflow_service()
+        return service.get_workflow_status(workflow_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Status retrieval failed: {str(e)}")
+
+
+@app.get("/api/workflow/list")
+async def list_workflows(
+    user_id: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 100
+):
+    """List workflows with optional filters."""
+    try:
+        from api.services import get_workflow_service
+        service = get_workflow_service()
+        return service.list_workflows(user_id=user_id, status=status, limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Workflow listing failed: {str(e)}")
+
+
+@app.post("/api/workflow/{workflow_id}/cancel")
+async def cancel_workflow(workflow_id: str):
+    """Cancel running workflow."""
+    try:
+        from api.services import get_workflow_service
+        service = get_workflow_service()
+        return service.cancel_workflow(workflow_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Workflow cancellation failed: {str(e)}")
+
+
+@app.get("/api/workflow/{workflow_id}/outputs")
+async def get_workflow_outputs(workflow_id: str):
+    """Get workflow output data and files."""
+    try:
+        from api.services import get_workflow_service
+        service = get_workflow_service()
+        return service.get_workflow_outputs(workflow_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Output retrieval failed: {str(e)}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5050)
