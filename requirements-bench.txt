@@ -12,6 +12,9 @@ h5py==3.9.0
 # Visualization (required for metrics)
 matplotlib==3.7.0
 
+# System monitoring (required for performance metrics)
+psutil>=5.9.0
+
 # Testing tools
 pytest==7.4.0
 pytest-cov==4.1.0
