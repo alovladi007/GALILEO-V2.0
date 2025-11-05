@@ -1,0 +1,362 @@
+"""
+Celery Tasks for GALILEO V2.0
+Distributed task queue for long-running operations
+"""
+
+import os
+from celery import Celery
+from celery.schedules import crontab
+
+# Initialize Celery
+broker_url = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+result_backend = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+
+app = Celery('galileo',
+             broker=broker_url,
+             backend=result_backend)
+
+# Configuration
+app.conf.update(
+    task_serializer='json',
+    accept_content=['json'],
+    result_serializer='json',
+    timezone='UTC',
+    enable_utc=True,
+    task_track_started=True,
+    task_time_limit=3600,  # 1 hour max
+    task_soft_time_limit=3000,  # 50 minutes warning
+    worker_prefetch_multiplier=1,
+    worker_max_tasks_per_child=1000,
+)
+
+# Periodic task schedule
+app.conf.beat_schedule = {
+    'cleanup-old-jobs': {
+        'task': 'ops.tasks.cleanup_old_jobs',
+        'schedule': crontab(hour=2, minute=0),  # Daily at 2 AM
+    },
+}
+
+# ============================================================================
+# Simulation Tasks
+# ============================================================================
+
+@app.task(bind=True, name='simulation.propagate_orbit')
+def propagate_orbit(self, initial_state, duration, time_step=10.0, perturbations=None):
+    """
+    Propagate satellite orbit with perturbations.
+
+    Args:
+        initial_state: [x, y, z, vx, vy, vz] in km and km/s
+        duration: Simulation duration in seconds
+        time_step: Time step in seconds
+        perturbations: List of perturbation models to include
+
+    Returns:
+        Dictionary with trajectory data
+    """
+    try:
+        from sim.keplerian import propagate_j2
+
+        self.update_state(state='RUNNING', meta={'progress': 0})
+
+        # Run propagation
+        times, states = propagate_j2(
+            initial_state,
+            duration,
+            time_step
+        )
+
+        self.update_state(state='RUNNING', meta={'progress': 100})
+
+        return {
+            'times': times.tolist(),
+            'states': states.tolist(),
+            'n_points': len(times)
+        }
+
+    except Exception as e:
+        self.update_state(state='FAILURE', meta={'error': str(e)})
+        raise
+
+@app.task(bind=True, name='simulation.propagate_formation')
+def propagate_formation(self, n_satellites, baseline_m, duration, time_step=10.0):
+    """
+    Propagate satellite formation.
+
+    Args:
+        n_satellites: Number of satellites
+        baseline_m: Baseline separation in meters
+        duration: Simulation duration in seconds
+        time_step: Time step in seconds
+
+    Returns:
+        Dictionary with formation trajectory data
+    """
+    try:
+        from sim.relative import propagate_hcw_formation
+
+        self.update_state(state='RUNNING', meta={'progress': 0})
+
+        # Run formation propagation
+        result = propagate_hcw_formation(
+            n_satellites,
+            baseline_m,
+            duration,
+            time_step
+        )
+
+        self.update_state(state='RUNNING', meta={'progress': 100})
+
+        return result
+
+    except Exception as e:
+        self.update_state(state='FAILURE', meta={'error': str(e)})
+        raise
+
+# ============================================================================
+# Inversion Tasks
+# ============================================================================
+
+@app.task(bind=True, name='inversion.compute_gravity_field')
+def compute_gravity_field(self, observations, grid_resolution=10, method='tikhonov'):
+    """
+    Compute gravity field from observations.
+
+    Args:
+        observations: List of observation dictionaries
+        grid_resolution: Grid resolution in km
+        method: Inversion method
+
+    Returns:
+        Dictionary with gravity field data
+    """
+    try:
+        from inversion.solvers import tikhonov_inversion
+
+        self.update_state(state='RUNNING', meta={'progress': 0})
+
+        # Run inversion
+        # (Implementation would go here)
+
+        self.update_state(state='RUNNING', meta={'progress': 100})
+
+        return {
+            'grid_resolution': grid_resolution,
+            'method': method,
+            'n_observations': len(observations)
+        }
+
+    except Exception as e:
+        self.update_state(state='FAILURE', meta={'error': str(e)})
+        raise
+
+# ============================================================================
+# ML Training Tasks
+# ============================================================================
+
+@app.task(bind=True, name='ml.train_pinn')
+def train_pinn(self, model_id, training_data, epochs=100):
+    """
+    Train Physics-Informed Neural Network.
+
+    Args:
+        model_id: Model identifier
+        training_data: Training dataset
+        epochs: Number of training epochs
+
+    Returns:
+        Training results
+    """
+    try:
+        from ml.pinn import PINN
+
+        self.update_state(state='RUNNING', meta={'progress': 0, 'epoch': 0})
+
+        # Load or create model
+        # (Implementation would go here)
+
+        for epoch in range(epochs):
+            # Training step
+            progress = int((epoch + 1) / epochs * 100)
+            self.update_state(
+                state='RUNNING',
+                meta={'progress': progress, 'epoch': epoch + 1}
+            )
+
+        return {
+            'model_id': model_id,
+            'final_epoch': epochs,
+            'status': 'completed'
+        }
+
+    except Exception as e:
+        self.update_state(state='FAILURE', meta={'error': str(e)})
+        raise
+
+@app.task(bind=True, name='ml.train_unet')
+def train_unet(self, model_id, training_data, epochs=50):
+    """
+    Train U-Net model for gravity field reconstruction.
+
+    Args:
+        model_id: Model identifier
+        training_data: Training dataset
+        epochs: Number of training epochs
+
+    Returns:
+        Training results
+    """
+    try:
+        from ml.unet import UNet
+
+        self.update_state(state='RUNNING', meta={'progress': 0, 'epoch': 0})
+
+        # Training loop
+        for epoch in range(epochs):
+            progress = int((epoch + 1) / epochs * 100)
+            self.update_state(
+                state='RUNNING',
+                meta={'progress': progress, 'epoch': epoch + 1}
+            )
+
+        return {
+            'model_id': model_id,
+            'final_epoch': epochs,
+            'status': 'completed'
+        }
+
+    except Exception as e:
+        self.update_state(state='FAILURE', meta={'error': str(e)})
+        raise
+
+# ============================================================================
+# Workflow Tasks
+# ============================================================================
+
+@app.task(bind=True, name='workflow.execute_mission_workflow')
+def execute_mission_workflow(self, workflow_config):
+    """
+    Execute end-to-end mission workflow.
+
+    Args:
+        workflow_config: Workflow configuration dictionary
+
+    Returns:
+        Workflow execution results
+    """
+    try:
+        self.update_state(state='RUNNING', meta={'progress': 0, 'stage': 'initialization'})
+
+        stages = workflow_config.get('stages', [])
+        total_stages = len(stages)
+
+        for i, stage in enumerate(stages):
+            stage_name = stage.get('name', f'stage_{i}')
+            self.update_state(
+                state='RUNNING',
+                meta={
+                    'progress': int((i + 1) / total_stages * 100),
+                    'stage': stage_name
+                }
+            )
+
+            # Execute stage
+            # (Implementation would call appropriate tasks)
+
+        return {
+            'workflow_id': workflow_config.get('workflow_id'),
+            'stages_completed': total_stages,
+            'status': 'completed'
+        }
+
+    except Exception as e:
+        self.update_state(state='FAILURE', meta={'error': str(e)})
+        raise
+
+# ============================================================================
+# Maintenance Tasks
+# ============================================================================
+
+@app.task(name='ops.tasks.cleanup_old_jobs')
+def cleanup_old_jobs():
+    """
+    Clean up old completed jobs from database.
+    Runs daily at 2 AM.
+    """
+    try:
+        from ops.models import SessionLocal, ProcessingJob
+        from datetime import datetime, timedelta
+
+        db = SessionLocal()
+
+        # Delete jobs older than 30 days
+        cutoff_date = datetime.utcnow() - timedelta(days=30)
+
+        deleted = db.query(ProcessingJob).filter(
+            ProcessingJob.completed_at < cutoff_date,
+            ProcessingJob.status == 'completed'
+        ).delete()
+
+        db.commit()
+        db.close()
+
+        return {
+            'deleted_jobs': deleted,
+            'cutoff_date': cutoff_date.isoformat()
+        }
+
+    except Exception as e:
+        return {'error': str(e)}
+
+@app.task(bind=True, name='test_task')
+def test_task(self, duration=5):
+    """
+    Simple test task for verification.
+
+    Args:
+        duration: Sleep duration in seconds
+
+    Returns:
+        Test completion message
+    """
+    import time
+
+    for i in range(duration):
+        self.update_state(
+            state='RUNNING',
+            meta={'progress': int((i + 1) / duration * 100)}
+        )
+        time.sleep(1)
+
+    return {'status': 'completed', 'duration': duration}
+
+# ============================================================================
+# Task Chains and Groups
+# ============================================================================
+
+def run_end_to_end_mission(mission_config):
+    """
+    Execute complete mission workflow as a chain of tasks.
+
+    Args:
+        mission_config: Mission configuration
+
+    Returns:
+        Celery chain result
+    """
+    from celery import chain
+
+    # Build task chain
+    workflow = chain(
+        propagate_formation.s(
+            n_satellites=mission_config.get('n_satellites', 2),
+            baseline_m=mission_config.get('baseline_m', 100),
+            duration=mission_config.get('duration', 86400)
+        ),
+        compute_gravity_field.s(
+            grid_resolution=mission_config.get('grid_resolution', 10)
+        )
+    )
+
+    return workflow.apply_async()

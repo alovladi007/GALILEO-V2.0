@@ -1,149 +1,80 @@
-# GeoSense Platform - Quick Start Guide
+# GALILEO V2.0 - Quick Start Guide
 
-## 🚀 Getting Started in 5 Minutes
+## 🚀 Start All Services (5 minutes)
 
-### Prerequisites
-- Python 3.11+
-- Rust 1.70+
-- Node.js 20+
-- Docker & Docker Compose
-- Git
-
-### Initial Setup
+### Option 1: Docker (Recommended - Easiest)
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-org/geosense-platform.git
-cd geosense-platform
+# 1. Start infrastructure
+docker-compose up -d postgres redis
 
-# 2. Set up Python environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -e ".[dev,ml]"
+# 2. Wait for services to be healthy (10 seconds)
+docker-compose ps
 
-# 3. Set up Rust
-cd control
-cargo build
-cd ..
+# 3. Initialize database
+python3 scripts/init-database.py
 
-# 4. Set up UI
-cd ui
-npm install
-cd ..
+# 4. Start Celery workers
+docker-compose up -d celery-worker celery-beat
 
-# 5. Start all services with Docker
-docker-compose up -d
+# 5. Start API server (in separate terminal)
+./start_dev_api.sh
+
+# 6. Verify everything is running
+curl http://localhost:5050/health
 ```
 
-### Running Tests
+**Stop all services:**
+```bash
+docker-compose down
+```
+
+### Option 2: Manual Setup (macOS)
 
 ```bash
-# Python tests
-pytest tests/ --cov
+# 1. Start PostgreSQL
+brew services start postgresql@14
 
-# Rust tests
-cargo test --workspace
+# 2. Create database
+psql postgres << EOF
+CREATE USER gravity WITH PASSWORD 'gravity_secret';
+CREATE DATABASE gravity_ops OWNER gravity;
+GRANT ALL PRIVILEGES ON DATABASE gravity_ops TO gravity;
+\\q
+EOF
 
-# UI tests
-cd ui && npm test
+# 3. Initialize schema
+python3 scripts/init-database.py
+
+# 4. Start Redis
+brew services start redis
+
+# 5. Start Celery worker (Terminal 1)
+celery -A ops.tasks worker --loglevel=info
+
+# 6. Start API server (Terminal 2)
+./start_dev_api.sh
 ```
 
-### Development Workflow
+## ✅ Verification
+
+After starting services, run the integration tests:
 
 ```bash
-# Start development servers
-docker-compose up
-
-# In separate terminals:
-# Python services (hot reload)
-python -m sim.gravity
-
-# Rust services
-cd control && cargo run
-
-# UI (hot reload)
-cd ui && npm run dev
+python3 test_integration_v2.py
 ```
 
-### Access Points
+**Expected Results:**
+- ✅ PostgreSQL: ~30 database endpoints working
+- ✅ Redis/Celery: ~11 task endpoints working
+- ✅ Total: ~50/103 endpoints working (48%)
 
-- **UI Dashboard**: http://localhost:3000
-- **API Gateway**: http://localhost:8000
-- **PostgreSQL**: localhost:5432
-- **Redis**: localhost:6379
+## 📚 Next Steps
 
-### Common Commands
-
-```bash
-# Format code
-black sim sensing inversion ml ops
-cargo fmt --all
-cd ui && npm run format
-
-# Lint code
-ruff check sim sensing inversion ml ops
-cargo clippy --all
-cd ui && npm run lint
-
-# Type check
-mypy sim sensing inversion ml ops
-cd ui && npm run type-check
-
-# Run specific tests
-pytest tests/unit/test_gravity.py -v
-cargo test dynamics
-cd ui && npm test -- components
-```
-
-### Architecture Diagrams
-
-View the generated architecture diagrams in `/docs/architecture/`:
-- `01_context_diagram.png` - System context
-- `02_container_diagram.png` - Container architecture
-- `03_component_diagram.png` - Component breakdown
-
-### Documentation
-
-- **Full README**: `/README.md`
-- **API Docs**: `/docs/api/`
-- **Deployment**: `/docs/deployment/`
-- **Ethics**: `/compliance/ETHICS.md`
-- **Legal**: `/compliance/LEGAL.md`
-
-### Troubleshooting
-
-**Issue**: Python dependencies fail to install
-```bash
-pip install --upgrade pip setuptools wheel
-pip install -e ".[dev]" --no-cache-dir
-```
-
-**Issue**: Rust compilation errors
-```bash
-cargo clean
-cargo update
-cargo build
-```
-
-**Issue**: Docker containers won't start
-```bash
-docker-compose down -v
-docker-compose up --build
-```
-
-### Next Steps
-
-1. Read `/SESSION_0_STATUS.md` for detailed status
-2. Review `/docs/architecture/` diagrams
-3. Check `/compliance/ETHICS.md` for usage guidelines
-4. Start implementing core features (see Session 1 in status doc)
-
-### Getting Help
-
-- **Documentation**: `/docs/`
-- **Issues**: Check GitHub issues
-- **Contributing**: See `CONTRIBUTING.md` in main README
+1. **Fix remaining bugs** - See ENDPOINT_STATUS_REPORT.md
+2. **Add correct test payloads** - See test_integration_v2.py
+3. **Configure compliance service** - External vault/HSM setup
 
 ---
 
-Happy coding! 🚀🛰️
+**Platform Version:** 0.4.0
