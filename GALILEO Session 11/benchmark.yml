@@ -1,0 +1,244 @@
+name: Benchmark Suite CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run benchmarks daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  benchmark:
+    name: Run Benchmark Suite
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-benchmark
+      
+      - name: Generate test datasets
+        run: |
+          python -c "from bench.datasets import create_sample_datasets; create_sample_datasets()"
+      
+      - name: Run spatial resolution suite
+        run: |
+          python bench.py --suite spatial --report json
+      
+      - name: Run localization suite
+        run: |
+          python bench.py --suite localization --report json
+      
+      - name: Run performance suite
+        run: |
+          python bench.py --suite performance --report json
+      
+      - name: Run coverage analysis
+        run: |
+          python bench.py --coverage
+      
+      - name: Generate HTML report
+        run: |
+          python bench.py --suite all --report html
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results-py${{ matrix.python-version }}
+          path: |
+            bench/reports/*.json
+            bench/reports/*.html
+      
+      - name: Check coverage threshold
+        run: |
+          python -c "
+          import json
+          from pathlib import Path
+          
+          # Find latest report
+          reports = list(Path('bench/reports').glob('benchmark_report_*.json'))
+          if reports:
+              with open(sorted(reports)[-1]) as f:
+                  results = json.load(f)
+              
+              # Check for failures
+              failed = [r for r in results if r['status'] == 'FAIL']
+              if failed:
+                  print(f'❌ {len(failed)} tests failed!')
+                  for test in failed:
+                      print(f\"  - {test['name']}: {test.get('error', 'No error info')}\")
+                  exit(1)
+              else:
+                  print(f\"✅ All {len(results)} tests passed!\")
+          "
+      
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read latest JSON report
+            const reportsDir = 'bench/reports';
+            const files = fs.readdirSync(reportsDir)
+              .filter(f => f.startsWith('benchmark_report_') && f.endsWith('.json'))
+              .sort()
+              .reverse();
+            
+            if (files.length === 0) return;
+            
+            const report = JSON.parse(
+              fs.readFileSync(path.join(reportsDir, files[0]))
+            );
+            
+            const passed = report.filter(r => r.status === 'PASS').length;
+            const warned = report.filter(r => r.status === 'WARN').length;
+            const failed = report.filter(r => r.status === 'FAIL').length;
+            const total = report.length;
+            
+            const totalRuntime = report.reduce((sum, r) => sum + r.runtime, 0);
+            
+            const body = `
+            ## 🔬 Benchmark Results
+            
+            **Python ${{ matrix.python-version }}**
+            
+            | Metric | Value |
+            |--------|-------|
+            | Total Tests | ${total} |
+            | ✅ Passed | ${passed} (${(passed/total*100).toFixed(1)}%) |
+            | ⚠️ Warnings | ${warned} (${(warned/total*100).toFixed(1)}%) |
+            | ❌ Failed | ${failed} (${(failed/total*100).toFixed(1)}%) |
+            | ⏱️ Runtime | ${totalRuntime.toFixed(2)}s |
+            
+            ${failed > 0 ? '### ❌ Failed Tests\n' + report.filter(r => r.status === 'FAIL').map(r => `- ${r.name}: ${r.error || 'Unknown error'}`).join('\n') : ''}
+            
+            <details>
+            <summary>View detailed results</summary>
+            
+            \`\`\`json
+            ${JSON.stringify(report, null, 2).slice(0, 3000)}
+            \`\`\`
+            
+            </details>
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: benchmark
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+      
+      - name: Run integration tests
+        run: |
+          pytest tests/ -v --cov=bench --cov-report=xml --cov-report=html
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+  benchmark-regression:
+    name: Regression Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      
+      - name: Run benchmarks on PR
+        run: |
+          python bench.py --suite all --report json
+          cp bench/reports/benchmark_report_*.json /tmp/pr_results.json
+      
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+      
+      - name: Run benchmarks on main
+        run: |
+          python bench.py --suite all --report json
+          cp bench/reports/benchmark_report_*.json /tmp/main_results.json
+      
+      - name: Compare results
+        run: |
+          python -c "
+          import json
+          
+          with open('/tmp/pr_results.json') as f:
+              pr_results = json.load(f)
+          with open('/tmp/main_results.json') as f:
+              main_results = json.load(f)
+          
+          print('Performance comparison:')
+          print('=' * 70)
+          
+          for pr_test, main_test in zip(pr_results, main_results):
+              if pr_test['name'] == main_test['name']:
+                  pr_time = pr_test['runtime']
+                  main_time = main_test['runtime']
+                  
+                  if pr_time > main_time * 1.1:  # 10% regression
+                      print(f\"⚠️  {pr_test['name']:30s}: {pr_time:.3f}s vs {main_time:.3f}s (+{(pr_time/main_time-1)*100:.1f}%)\")
+                  elif pr_time < main_time * 0.9:  # 10% improvement
+                      print(f\"✅ {pr_test['name']:30s}: {pr_time:.3f}s vs {main_time:.3f}s ({(1-pr_time/main_time)*100:.1f}% faster)\")
+          "
