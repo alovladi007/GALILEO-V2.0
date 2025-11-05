@@ -38,10 +38,20 @@ class AllanDeviationResult:
     confidence_intervals: Optional[np.ndarray] = None
 
     def to_dict(self) -> Dict[str, Any]:
+        # Replace NaN and Inf with None for JSON compliance
+        def sanitize_values(arr):
+            result = []
+            for val in arr:
+                if np.isnan(val) or np.isinf(val):
+                    result.append(None)
+                else:
+                    result.append(float(val))
+            return result
+
         return {
-            'tau_values': self.tau_values.tolist(),
-            'adev_values': self.adev_values.tolist(),
-            'confidence_intervals': self.confidence_intervals.tolist() if self.confidence_intervals is not None else None
+            'tau_values': sanitize_values(self.tau_values),
+            'adev_values': sanitize_values(self.adev_values),
+            'confidence_intervals': sanitize_values(self.confidence_intervals) if self.confidence_intervals is not None else None
         }
 
 
